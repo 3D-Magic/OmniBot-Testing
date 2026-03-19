@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OMNIBOT v2.6 Sentinel - Dashboard</title>
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg-dark: #0d1117;
+            --bg-card: #161b22;
+            --border: #30363d;
+            --text-primary: #c9d1d9;
+            --text-secondary: #8b949e;
+            --accent: #58a6ff;
+            --success: #238636;
+            --danger: #da3633;
+            --warning: #f0883e;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+        .header {
+            background: var(--bg-card);
+            border-bottom: 1px solid var(--border);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .logo { display: flex; align-items: center; gap: 0.75rem; }
+        .logo h1 { font-size: 1.5rem; font-weight: 600; }
+        .version {
+            background: var(--accent);
+            color: white;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        .status-indicator { display: flex; align-items: center; gap: 0.5rem; }
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--success);
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        .container { max-width: 1400px; margin: 0 auto; padding: 2rem; }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+        }
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        .card-title {
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-secondary);
+        }
+        .metric { font-size: 2rem; font-weight: 700; margin: 0.5rem 0; }
+        .metric.positive { color: var(--success); }
+        .metric.negative { color: var(--danger); }
+        .change { font-size: 0.875rem; display: flex; align-items: center; gap: 0.25rem; }
+        .change.positive { color: var(--success); }
+        .change.negative { color: var(--danger); }
+        .chart-container { position: relative; height: 300px; margin-top: 1rem; }
+        .table-container { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { text-align: left; padding: 0.75rem; border-bottom: 1px solid var(--border); }
+        th {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-secondary);
+        }
+        tr:hover { background: rgba(255,255,255,0.05); }
+        .btn {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.875rem;
+            transition: opacity 0.2s;
+        }
+        .btn:hover { opacity: 0.8; }
+        .btn-danger { background: var(--danger); }
+        .toggle-switch {
+            position: relative;
+            width: 44px;
+            height: 24px;
+            background: var(--border);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        .toggle-switch.active { background: var(--success); }
+        .toggle-switch::after {
+            content: "";
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background: white;
+            border-radius: 50%;
+            top: 2px;
+            left: 2px;
+            transition: transform 0.3s;
+        }
+        .toggle-switch.active::after { transform: translateX(20px); }
+        .emergency-stop {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            z-index: 1000;
+        }
+        @media (max-width: 768px) {
+            .container { padding: 1rem; }
+            .grid { grid-template-columns: 1fr; }
+            .header { padding: 1rem; }
+            .logo h1 { font-size: 1.25rem; }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="logo">
+            <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+                <circle cx="16" cy="16" r="14" stroke="#58a6ff" stroke-width="2"/>
+                <path d="M10 16L14 20L22 12" stroke="#58a6ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <h1>OMNIBOT <span class="version">v2.6</span></h1>
+        </div>
+        <div class="status-indicator">
+            <span class="status-dot"></span>
+            <span id="system-status">Running</span>
+        </div>
+    </header>
+    <div class="container">
+        <div class="grid">
+            <div class="card">
+                <div class="card-header"><span class="card-title">Total Value</span></div>
+                <div class="metric" id="total-value">$100,000.00</div>
+                <div class="change positive" id="total-change"><span>+</span>$15,000.00 (+17.5%)</div>
+            </div>
+            <div class="card">
+                <div class="card-header"><span class="card-title">Day P&L</span></div>
+                <div class="metric positive" id="day-pnl">+$1,250.50</div>
+                <div class="change positive" id="day-change"><span>+</span>1.25%</div>
+            </div>
+            <div class="card">
+                <div class="card-header"><span class="card-title">Cash Available</span></div>
+                <div class="metric" id="cash">$25,000.00</div>
+                <div class="change" style="color: var(--text-secondary)">25% of portfolio</div>
+            </div>
+            <div class="card">
+                <div class="card-header"><span class="card-title">Active Positions</span></div>
+                <div class="metric" id="positions-count">5</div>
+                <div class="change" style="color: var(--text-secondary)">Across 4 strategies</div>
+            </div>
+        </div>
+        <div class="card" style="margin-bottom: 2rem;">
+            <div class="card-header">
+                <span class="card-title">Portfolio Performance</span>
+                <select id="chart-period" style="background: var(--bg-dark); color: var(--text-primary); border: 1px solid var(--border); padding: 0.25rem 0.5rem; border-radius: 4px;">
+                    <option value="7">7 Days</option>
+                    <option value="30" selected>30 Days</option>
+                    <option value="90">90 Days</option>
+                    <option value="365">1 Year</option>
+                </select>
+            </div>
+            <div class="chart-container"><canvas id="portfolioChart"></canvas></div>
+        </div>
+        <div class="grid" style="grid-template-columns: 2fr 1fr;">
+            <div class="card">
+                <div class="card-header"><span class="card-title">Current Positions</span></div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr><th>Symbol</th><th>Quantity</th><th>Avg Price</th><th>Current</th><th>P&L</th><th>P&L %</th></tr>
+                        </thead>
+                        <tbody id="positions-table"></tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-header"><span class="card-title">Strategies</span></div>
+                <div id="strategies-list"></div>
+            </div>
+        </div>
+        <div class="card" style="margin-top: 2rem;">
+            <div class="card-header"><span class="card-title">Recent Trades</span></div>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr><th>Time</th><th>Symbol</th><th>Side</th><th>Quantity</th><th>Price</th><th>Value</th></tr>
+                    </thead>
+                    <tbody id="trades-table"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <button class="btn btn-danger emergency-stop" onclick="emergencyStop()">🛑 Emergency Stop</button>
+    <script>
+        const socket = io();
+        let portfolioChart;
+        function initChart() {
+            const ctx = document.getElementById("portfolioChart").getContext("2d");
+            portfolioChart = new Chart(ctx, {
+                type: "line",
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: "Portfolio Value",
+                        data: [],
+                        borderColor: "#58a6ff",
+                        backgroundColor: "rgba(88, 166, 255, 0.1)",
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { grid: { color: "#30363d" }, ticks: { color: "#8b949e" } },
+                        y: {
+                            grid: { color: "#30363d" },
+                            ticks: { color: "#8b949e", callback: function(value) { return "$" + value.toLocaleString(); } }
+                        }
+                    }
+                }
+            });
+        }
+        async function loadData() {
+            const portfolio = await fetch("/api/portfolio").then(r => r.json());
+            updatePortfolio(portfolio);
+            const positions = await fetch("/api/positions").then(r => r.json());
+            updatePositions(positions);
+            const trades = await fetch("/api/trades").then(r => r.json());
+            updateTrades(trades);
+            const strategies = await fetch("/api/strategies").then(r => r.json());
+            updateStrategies(strategies);
+            const history = await fetch("/api/history?days=30").then(r => r.json());
+            updateChart(history);
+        }
+        function updatePortfolio(data) {
+            document.getElementById("total-value").textContent = "$" + data.total_value.toLocaleString("en-US", {minimumFractionDigits: 2});
+            document.getElementById("day-pnl").textContent = (data.day_pnl >= 0 ? "+" : "") + "$" + Math.abs(data.day_pnl).toLocaleString();
+            document.getElementById("day-pnl").className = "metric " + (data.day_pnl >= 0 ? "positive" : "negative");
+            document.getElementById("cash").textContent = "$" + data.cash.toLocaleString("en-US", {minimumFractionDigits: 2});
+        }
+        function updatePositions(positions) {
+            const tbody = document.getElementById("positions-table");
+            tbody.innerHTML = positions.map(pos => `
+                <tr>
+                    <td><strong>${pos.symbol}</strong></td>
+                    <td>${pos.quantity}</td>
+                    <td>$${pos.avg_price.toFixed(2)}</td>
+                    <td>$${pos.current_price.toFixed(2)}</td>
+                    <td style="color: ${pos.pnl >= 0 ? "#238636" : "#da3633"}">${pos.pnl >= 0 ? "+" : ""}$${Math.abs(pos.pnl).toLocaleString()}</td>
+                    <td style="color: ${pos.pnl_pct >= 0 ? "#238636" : "#da3633"}">${pos.pnl_pct >= 0 ? "+" : ""}${pos.pnl_pct.toFixed(2)}%</td>
+                </tr>
+            `).join("");
+            document.getElementById("positions-count").textContent = positions.length;
+        }
+        function updateTrades(trades) {
+            const tbody = document.getElementById("trades-table");
+            tbody.innerHTML = trades.map(trade => `
+                <tr>
+                    <td>${new Date(trade.timestamp).toLocaleString()}</td>
+                    <td><strong>${trade.symbol}</strong></td>
+                    <td style="color: ${trade.side === "buy" ? "#238636" : "#f0883e"}; text-transform: uppercase;">${trade.side}</td>
+                    <td>${trade.quantity}</td>
+                    <td>$${trade.price.toFixed(2)}</td>
+                    <td>$${trade.value.toLocaleString()}</td>
+                </tr>
+            `).join("");
+        }
+        function updateStrategies(strategies) {
+            const container = document.getElementById("strategies-list");
+            container.innerHTML = strategies.map(strat => `
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 1rem 0; border-bottom: 1px solid var(--border);">
+                    <div>
+                        <div style="font-weight: 600; text-transform: capitalize;">${strat.name}</div>
+                        <div style="font-size: 0.875rem; color: var(--text-secondary);">${strat.trades} trades | ${strat.win_rate}% win rate</div>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 1rem;">
+                        <div style="text-align: right;">
+                            <div style="color: ${strat.profit >= 0 ? "#238636" : "#da3633"}; font-weight: 600;">${strat.profit >= 0 ? "+" : ""}$${strat.profit.toLocaleString()}</div>
+                            <div style="font-size: 0.75rem; color: var(--text-secondary);">Weight: ${(strat.weight * 100).toFixed(0)}%</div>
+                        </div>
+                        <div class="toggle-switch ${strat.enabled ? "active" : ""}" onclick="toggleStrategy('${strat.name}', this)"></div>
+                    </div>
+                </div>
+            `).join("");
+        }
+        function updateChart(history) {
+            portfolioChart.data.labels = history.map(h => h.date);
+            portfolioChart.data.datasets[0].data = history.map(h => h.value);
+            portfolioChart.update();
+        }
+        async function toggleStrategy(name, element) {
+            const response = await fetch(`/api/strategies/${name}/toggle`, {method: "POST"});
+            const result = await response.json();
+            if (result.success) element.classList.toggle("active");
+        }
+        async function emergencyStop() {
+            if (confirm("Are you sure you want to stop all trading?")) {
+                const response = await fetch("/api/emergency_stop", {method: "POST"});
+                const result = await response.json();
+                if (result.success) {
+                    alert("Trading stopped successfully");
+                    document.getElementById("system-status").textContent = "Stopped";
+                    document.querySelector(".status-dot").style.background = "var(--danger)";
+                }
+            }
+        }
+        socket.on("portfolio_update", (data) => { updatePortfolio(data); });
+        socket.on("system_update", (data) => { document.getElementById("system-status").textContent = data.status; });
+        socket.on("new_trade", (trade) => { loadData(); });
+        document.addEventListener("DOMContentLoaded", () => { initChart(); loadData(); });
+        setInterval(loadData, 30000);
+    </script>
+</body>
+</html>
