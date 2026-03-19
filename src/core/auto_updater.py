@@ -32,7 +32,7 @@ class AutoUpdater:
         self.weekend_only = AUTO_UPDATER.get('update_on_weekend', True)
         self.update_time = AUTO_UPDATER.get('update_time', '02:00')
         self.rollback_on_failure = AUTO_UPDATER.get('rollback_on_failure', True)
-        self.version_url = AUTO_UPDER.get('version_url', '')
+        self.version_url = AUTO_UPDATER.get('version_url', '')
         self.repo_url = AUTO_UPDATER.get('repo_url', '')
 
         self.last_check = None
