@@ -28,11 +28,10 @@ textblob>=0.17.0
 nltk>=3.8.0
 vaderSentiment>=3.3.0
 
-# Machine Learning
+# Machine Learning (lightweight for Pi)
 scikit-learn>=1.3.0
-tensorflow>=2.13.0
-tensorflow-lite>=2.13.0
-keras>=2.13.0
+# tensorflow>=2.13.0  # Not available for Python 3.13 on Pi
+# keras>=2.13.0       # Not available for Python 3.13 on Pi
 
 # Utilities
 tqdm>=4.65.0
