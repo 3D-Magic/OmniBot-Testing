@@ -1,2 +1,2 @@
-
-from .engine import BacktestEngine, BacktestResult
+"""Backtesting modules"""
+from .engine import BacktestEngine

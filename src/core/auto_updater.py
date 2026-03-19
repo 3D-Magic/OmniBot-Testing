@@ -14,6 +14,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 import threading
 import time
+from typing import Dict, List, Optional, Any  # FIXED: Added Dict import
 
 from config.settings import AUTO_UPDATE, VERSION
 
@@ -79,7 +80,7 @@ class AutoUpdater:
 
         current_time = now.time()
         target_datetime = datetime.combine(now.date(), 
-                                         __import__("datetime").time(target_hour, target_minute))
+                                           __import__("datetime").time(target_hour, target_minute))
 
         # Allow 1 hour window
         time_diff = abs((datetime.combine(now.date(), current_time) - target_datetime).total_seconds())
@@ -174,16 +175,10 @@ class AutoUpdater:
 
     def _version_compare(self, v1: str, v2: str) -> int:
         """Compare two version strings. Returns >0 if v1>v2, <0 if v1<v2, 0 if equal"""
-        def parse_version(v):
-            return [int(x) for x in v.split(".")]
+        parts1 = [int(x) for x in v1.split(".")]
+        parts2 = [int(x) for x in v2.split(".")]
 
-        v1_parts = parse_version(v1)
-        v2_parts = parse_version(v2)
-
-        for i in range(max(len(v1_parts), len(v2_parts))):
-            p1 = v1_parts[i] if i < len(v1_parts) else 0
-            p2 = v2_parts[i] if i < len(v2_parts) else 0
-
+        for p1, p2 in zip(parts1, parts2):
             if p1 > p2:
                 return 1
             elif p1 < p2:

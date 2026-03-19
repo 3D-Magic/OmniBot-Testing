@@ -8,12 +8,14 @@ from datetime import datetime, timedelta
 from functools import wraps
 import json
 import os
+import threading
+import time
 
 from flask import Flask, render_template, jsonify, request, session, redirect, url_for
 from flask_socketio import SocketIO, emit
 import pandas as pd
 
-from config.settings import DASHBOARD, VERSION, VERSION_NAME
+from config.settings import DASHBOARD, VERSION, VERSION_NAME, EXTERNAL_ACCESS
 
 logger = logging.getLogger(__name__)
 
@@ -24,6 +26,72 @@ app.config["SEND_FILE_MAX_AGE_DEFAULT"] = 0
 
 # Initialize SocketIO for real-time updates
 socketio = SocketIO(app, cors_allowed_origins="*", async_mode="threading")
+
+# ngrok integration
+try:
+    from pyngrok import ngrok
+    NGROK_AVAILABLE = True
+except ImportError:
+    NGROK_AVAILABLE = False
+    logger.warning("pyngrok not installed, external access disabled")
+
+class NgrokManager:
+    """Manages ngrok tunnel for external access"""
+    def __init__(self):
+        self.tunnel = None
+        self.public_url = None
+        self.thread = None
+        self.running = False
+
+    def start(self, port=8080):
+        """Start ngrok tunnel"""
+        if not NGROK_AVAILABLE:
+            logger.error("ngrok not available - install pyngrok")
+            return None
+
+        try:
+            # Configure ngrok
+            authtoken = EXTERNAL_ACCESS.get("ngrok_authtoken", "")
+            if authtoken:
+                ngrok.set_auth_token(authtoken)
+
+            # Start tunnel
+            self.tunnel = ngrok.connect(port, "http")
+            self.public_url = self.tunnel.public_url
+            self.running = True
+
+            logger.info(f"ngrok tunnel started: {self.public_url}")
+
+            # Keep tunnel alive in background thread
+            if EXTERNAL_ACCESS.get("keep_terminal_alive", True):
+                self.thread = threading.Thread(target=self._keep_alive, daemon=True)
+                self.thread.start()
+
+            return self.public_url
+
+        except Exception as e:
+            logger.error(f"Failed to start ngrok: {e}")
+            return None
+
+    def _keep_alive(self):
+        """Keep ngrok tunnel alive"""
+        while self.running:
+            time.sleep(30)
+            try:
+                # Ping ngrok API to keep connection alive
+                ngrok.get_tunnels()
+            except:
+                pass
+
+    def stop(self):
+        """Stop ngrok tunnel"""
+        self.running = False
+        if self.tunnel:
+            ngrok.disconnect(self.tunnel.public_url)
+            ngrok.kill()
+            logger.info("ngrok tunnel stopped")
+
+ngrok_manager = NgrokManager()
 
 # Mock data store (will be replaced with actual data sources)
 class DataStore:
@@ -64,7 +132,8 @@ class DataStore:
             "memory_usage": 45.2,
             "disk_usage": 32.8,
             "temperature": 52.3,
-            "last_update": datetime.now().isoformat()
+            "last_update": datetime.now().isoformat(),
+            "ngrok_url": None
         }
 
     def get_portfolio_history(self, days=30):
@@ -90,7 +159,9 @@ data_store = DataStore()
 def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        if DASHBOARD["auth_required"] and not session.get("logged_in"):
+        # FIXED: Check if auth_required exists, default to True
+        auth_required = DASHBOARD.get("auth_required", True)
+        if auth_required and not session.get("logged_in"):
             return redirect(url_for("login"))
         return f(*args, **kwargs)
     return decorated_function
@@ -99,17 +170,21 @@ def login_required(f):
 @login_required
 def index():
     """Main dashboard page"""
-    return render_template("index.html", 
-                         version=VERSION, 
+    ngrok_url = ngrok_manager.public_url if ngrok_manager.running else None
+    return render_template("index.html",
+                         version=VERSION,
                          version_name=VERSION_NAME,
-                         hardware_profile="pi5_8gb")
+                         hardware_profile="pi5_8gb",
+                         ngrok_url=ngrok_url)
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
     """Login page"""
     if request.method == "POST":
         password = request.form.get("password")
-        if password == "admin":
+        # FIXED: Use DASHBOARD password setting
+        admin_password = DASHBOARD.get("password", "admin")
+        if password == admin_password:
             session["logged_in"] = True
             return redirect(url_for("index"))
         return render_template("login.html", error="Invalid password")
@@ -154,7 +229,29 @@ def api_toggle_strategy(name):
 @app.route("/api/system")
 @login_required
 def api_system():
+    # Update ngrok URL in status
+    if ngrok_manager.running and ngrok_manager.public_url:
+        data_store.system_status["ngrok_url"] = ngrok_manager.public_url
     return jsonify(data_store.system_status)
+
+@app.route("/api/ngrok/start", methods=["POST"])
+@login_required
+def api_start_ngrok():
+    """Start ngrok tunnel manually"""
+    port = request.json.get("port", 8080) if request.json else 8080
+    url = ngrok_manager.start(port)
+    if url:
+        data_store.system_status["ngrok_url"] = url
+        return jsonify({"success": True, "url": url})
+    return jsonify({"success": False, "error": "Failed to start ngrok"}), 500
+
+@app.route("/api/ngrok/stop", methods=["POST"])
+@login_required
+def api_stop_ngrok():
+    """Stop ngrok tunnel"""
+    ngrok_manager.stop()
+    data_store.system_status["ngrok_url"] = None
+    return jsonify({"success": True})
 
 @app.route("/api/history")
 @login_required
@@ -211,13 +308,27 @@ def handle_connect():
 def handle_disconnect():
     logger.info("Client disconnected from dashboard")
 
-def run_dashboard(host=None, port=None, debug=False):
+def run_dashboard(host=None, port=None, debug=False, enable_ngrok=None):
     """Run the dashboard server"""
-    host = host or DASHBOARD["host"]
-    port = port or DASHBOARD["port"]
+    host = host or DASHBOARD.get("host", "0.0.0.0")
+    port = port or DASHBOARD.get("port", 8080)
+
+    # Auto-start ngrok if configured
+    if enable_ngrok is None:
+        enable_ngrok = EXTERNAL_ACCESS.get("enabled", False)
+
+    if enable_ngrok and NGROK_AVAILABLE:
+        ngrok_url = ngrok_manager.start(port)
+        if ngrok_url:
+            logger.info(f"Dashboard accessible externally at: {ngrok_url}")
+            data_store.system_status["ngrok_url"] = ngrok_url
 
     logger.info(f"Starting OMNIBOT Dashboard on http://{host}:{port}")
-    socketio.run(app, host=host, port=port, debug=debug)
+
+    # FIXED: Add allow_unsafe_werkzeug for ngrok/external access
+    allow_unsafe = DASHBOARD.get("allow_unsafe_werkzeug", True)
+
+    socketio.run(app, host=host, port=port, debug=debug, allow_unsafe_werkzeug=allow_unsafe)
 
 if __name__ == "__main__":
     run_dashboard()

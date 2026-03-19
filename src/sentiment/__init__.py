@@ -1,2 +1,1 @@
-
-from .analyzer import SentimentAnalyzer, SentimentScore
+"""Sentiment analysis modules"""

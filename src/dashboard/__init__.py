@@ -1,2 +1,2 @@
-
-from .app import app, socketio, run_dashboard
+"""Dashboard modules"""
+from .app import run_dashboard, app, socketio
