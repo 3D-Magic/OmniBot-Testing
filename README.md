@@ -1,374 +1,85 @@
 # 🤖 OMNIBOT v2.6 Sentinel
 
-**ML-Enhanced Automated Trading System for Raspberry Pi**
-
-> **Zero Cost** • **Fully Automated** • **Open Source** • **Pi 5 Optimized**
-
----
-
-## 🎯 What's New in v2.6 Sentinel
-
-### ✨ Multi-Strategy Engine
-- Run **4 strategies simultaneously** (Momentum, Mean Reversion, Breakout, ML Ensemble)
-- Dynamic weight allocation based on performance
-- Consensus-based signal generation
-
-### 📰 Free Sentiment Analysis
-- **Reddit** monitoring (r/wallstreetbets, r/stocks, r/investing)
-- **RSS feeds** from Yahoo Finance, MarketWatch
-- No paid APIs required
-
-### 📈 Backtesting Engine
-- Test strategies on historical data
-- Walk-forward optimization
-- Performance metrics (Sharpe ratio, max drawdown, win rate)
-
-### 🌐 Web Dashboard with ngrok
-- Real-time portfolio monitoring
-- **External access** via ngrok tunnel
-- Mobile-responsive design
-- Emergency stop button
-- Strategy toggle controls
-
-### 🔄 Weekend Auto-Updates
-- Automatically updates during market closures
-- Built-in rollback on failure
-- Zero manual intervention required
-
----
-
-## 📋 Requirements
-
-### Hardware
-- **Raspberry Pi 5 (8GB recommended)** or Pi 4 (4GB minimum)
-- MicroSD Card (32GB+, Class 10)
-- Stable internet connection
-- Power supply (5V 3A for Pi 5)
-
-### Software
-- Raspberry Pi OS (64-bit)
-- Python 3.11+
-- Git
-
----
+ML-Enhanced Automated Trading System optimized for Raspberry Pi Zero Cost / Open Source.
 
 ## 🚀 Quick Start
 
-### 1. Clone Repository
-
 ```bash
-git clone https://github.com/3D-Magic/OmniBot-Testing.git
-cd OmniBot-Testing
-```
+# Download and install
+cd ~
+wget https://github.com/3D-Magic/OmniBot-Testing/archive/refs/heads/main.zip -O omnibot-v2.6.zip
+unzip omnibot-v2.6.zip
+mv OmniBot-Testing-main OmniBot-v2.6
+cd OmniBot-v2.6
 
-### 2. Run Setup
-
-```bash
+# Run setup
 chmod +x setup.sh
 ./setup.sh
+
+# Start with external access
+./scripts/omnibot.sh start --ngrok
 ```
 
-### 3. Configure API Keys
+## 🌐 External Access (ngrok)
+
+1. Get free token at https://dashboard.ngrok.com
+2. Run setup: `python src/main.py --setup`
+3. Enter ngrok token
+4. Start: `./scripts/omnibot.sh start --ngrok`
+
+## 📁 Structure
+
+```
+omnibot-v2.6/
+├── src/
+│   ├── main.py                 # Entry point
+│   ├── core/                   # Trading engine, data fetcher, auto-updater
+│   ├── strategies/             # Trading strategies
+│   ├── sentiment/              # Sentiment analysis
+│   ├── backtest/               # Backtesting engine
+│   └── dashboard/              # Web dashboard
+├── config/settings.py          # Configuration
+├── scripts/omnibot.sh          # Helper script
+├── setup.sh                    # Installation
+└── clean-install.sh            # Clean reinstall
+```
+
+## 🛠️ Commands
 
 ```bash
-python src/main.py --setup
+# Start dashboard with ngrok
+./scripts/omnibot.sh start --ngrok
+
+# Check status
+./scripts/omnibot.sh status
+
+# Attach to running session
+tmux attach -t omnibot
+
+# Stop
+./scripts/omnibot.sh stop
+
+# Restart
+./scripts/omnibot.sh restart --ngrok
 ```
 
-### 4. Start Trading
-
-```bash
-# Trading mode
-python src/main.py --mode trading
-
-# Or start dashboard
-python src/main.py --mode dashboard
-
-# Dashboard with external access (ngrok)
-python src/main.py --mode dashboard --ngrok
-```
-
----
-
-## 📊 Usage Modes
-
-### Trading Mode
-
-```bash
-python src/main.py --mode trading
-```
-
-- Runs 24/7 automated trading
-- Monitors watchlist
-- Executes trades based on strategy signals
-- Logs all activity
-
-### Dashboard Mode
-
-```bash
-# Local access only
-python src/main.py --mode dashboard
-
-# With ngrok tunnel (external access)
-python src/main.py --mode dashboard --ngrok
-```
-
-- Web interface at `http://your-pi-ip:8080`
-- Real-time portfolio view
-- Manual trade override
-- Strategy controls
-- **ngrok integration** for external access
-
-### Backtest Mode
-
-```bash
-python src/main.py --backtest --start 2023-01-01 --end 2024-01-01 --symbols AAPL,MSFT,GOOGL
-```
-
-- Test strategies on historical data
-- Optimize parameters
-- Generate performance reports
-
----
-
-## 🌐 External Access with ngrok
-
-OMNIBOT v2.6 includes built-in ngrok support for accessing your dashboard from anywhere:
-
-### Setup ngrok
-
-1. Get free authtoken at [dashboard.ngrok.com](https://dashboard.ngrok.com)
-2. During setup, enter your ngrok authtoken
-3. Enable "External Access" in settings
-
-### Start with ngrok
-
-```bash
-python src/main.py --mode dashboard --ngrok
-```
-
-Or start ngrok manually from the dashboard UI.
-
-### Keep Terminal Alive
-
-For ngrok to stay connected, keep the terminal session alive:
-
-```bash
-# Method 1: Use nohup
-nohup python src/main.py --mode dashboard --ngrok > dashboard.log 2>&1 &
-
-# Method 2: Use screen
-screen -S omnibot
-python src/main.py --mode dashboard --ngrok
-# Press Ctrl+A, then D to detach
-
-# Method 3: Use tmux
-tmux new -s omnibot
-python src/main.py --mode dashboard --ngrok
-# Press Ctrl+B, then D to detach
-```
-
----
-
-## 🧠 Strategies
-
-### 1. Momentum Strategy
-- Identifies trending stocks
-- Uses 20-day lookback period
-- Buy when momentum > 5%
-
-### 2. Mean Reversion
-- Finds overbought/oversold conditions
-- Uses z-score calculation
-- Buy when z-score < -2.0
-
-### 3. Breakout Strategy
-- Detects price breakouts
-- Uses ATR for volatility
-- Enters on confirmed breakouts
-
-### 4. ML Ensemble
-- LSTM-based predictions
-- Combines technical indicators
-- Adapts to market regimes
-
----
-
-## ⚙️ Configuration
-
-### Hardware Profiles
-
-Automatically detected and optimized for:
-
-- **Pi 5 8GB**: 4 parallel strategies, large ML models
-- **Pi 4 8GB**: 2 parallel strategies, medium models
-- **Pi 4 4GB**: 1 strategy, small models
-
-### Trading Settings
-
-Edit `config/settings.py`:
-
-```python
-TRADING = {
-    "mode": "paper",        # paper or live
-    "max_positions": 10,    # Max concurrent positions
-    "risk_per_trade": 0.02, # 2% risk per trade
-    "max_daily_loss": 0.05  # Stop after 5% daily loss
-}
-```
-
-### Strategy Weights
-
-Adjust in `config/settings.py`:
-
-```python
-STRATEGIES = {
-    "momentum": {"enabled": True, "weight": 0.25},
-    "mean_reversion": {"enabled": True, "weight": 0.25},
-    "breakout": {"enabled": True, "weight": 0.25},
-    "ml_ensemble": {"enabled": True, "weight": 0.25}
-}
-```
-
-### External Access Settings
-
-```python
-EXTERNAL_ACCESS = {
-    "enabled": True,              # Auto-start ngrok
-    "ngrok_authtoken": "YOUR_TOKEN",
-    "ngrok_region": "us",         # us, eu, ap, au, sa, jp, in
-    "keep_terminal_alive": True   # Keep terminal session alive
-}
-```
-
----
-
-## 🔒 Security
-
-- **File integrity verification**: Bot won't run if code is modified
-- **Admin password**: Required for configuration changes
-- **Encrypted config**: API keys are encrypted
-- **Auto-lockout**: After 3 failed login attempts
-
----
-
-## 📈 Performance
-
-### Expected Metrics (Paper Trading)
-
-- **Sharpe Ratio**: 1.2-1.8
-- **Win Rate**: 55-65%
-- **Max Drawdown**: <15%
-- **Annual Return**: 15-25% (backtested)
-
-### Resource Usage (Pi 5)
-
-- **CPU**: 15-25% average
-- **Memory**: 4-6GB
-- **Network**: ~50MB/day
-- **Disk**: ~100MB/week for logs
-
----
-
-## 🆘 Troubleshooting
-
-### Bot won't start
-
-```bash
-# Check logs
-tail -f data/logs/omnibot.log
-
-# Verify installation
-python -c "import flask, pandas, yfinance; print('OK')"
-
-# Reset config
-rm config/user_config.py
-python src/main.py --setup
-```
-
-### Dashboard not accessible
-
-```bash
-# Check if port 8080 is open
-sudo ufw allow 8080
-
-# Check service status
-sudo systemctl status omnibot
-
-# Run with explicit host
-python src/main.py --mode dashboard
-```
-
-### ngrok connection issues
-
-```bash
-# Check ngrok status
-curl http://localhost:4040/api/tunnels
-
-# Restart ngrok
-pkill ngrok
-python src/main.py --mode dashboard --ngrok
-```
-
-### High memory usage
-
-- Reduce `max_strategies` in settings
-- Disable dashboard if not needed
-- Clear cache: `rm -rf data/cache/*`
-
----
-
-## 🔄 Updates
-
-OMNIBOT automatically checks for updates on weekends. To manually update:
-
-```bash
-# Check for updates
-python -c "from src.core.auto_updater import AutoUpdater; au = AutoUpdater(); print(au.check_now())"
-
-# Force update (only when market closed)
-python -c "from src.core.auto_updater import AutoUpdater; au = AutoUpdater(); au.force_update()"
-```
-
----
-
-## 🤝 Contributing
-
-This is a personal project. For feature requests or issues, please open a GitHub issue.
-
----
-
-## ⚠️ Disclaimer
-
-**Trading involves substantial risk of loss. This software is for educational purposes only.**
-
-- Always start with **paper trading**
-- Never trade more than you can afford to lose
-- Past performance does not guarantee future results
-- The authors are not responsible for any financial losses
-
----
+## 🔧 Fixes in v2.6
+
+- ✅ Fixed `Dict` import in auto_updater.py
+- ✅ Fixed `allow_unsafe_werkzeug` for ngrok
+- ✅ Fixed `auth_required` key in dashboard
+- ✅ Removed tensorflow-lite (Python 3.13 compatibility)
+- ✅ Added full ngrok integration
+- ✅ Added terminal keep-alive via tmux
+- ✅ Added helper scripts
+
+## 📝 Notes
+
+- Default dashboard port: 8081
+- Default password: `admin`
+- Tested on Raspberry Pi 5 with Python 3.13
+- Uses scikit-learn instead of TensorFlow for ML (better Pi compatibility)
 
 ## 📜 License
 
-**Personal Use License**
-
-- ✅ Use for your own trading
-- ❌ No selling
-- ❌ No modifications
-- ❌ No redistribution
-- ❌ No commercial use
-
----
-
-## 🙏 Acknowledgments
-
-- yfinance for free market data
-- Alpaca for commission-free trading
-- Flask for the web framework
-- ngrok for external access
-
----
-
-**Made with ❤️ for the Raspberry Pi trading community**
-
-_Version 2.6.0 - Sentinel_
+MIT License - Open Source

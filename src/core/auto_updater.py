@@ -1,184 +1,114 @@
 """
-OMNIBOT v2.6 Sentinel - Weekend Auto-Updater
-Automatically updates the bot during weekends when markets are closed
+OMNIBOT Auto-Updater - Weekend Updates
+Fixed: Added Dict import for Python type hints
 """
 
-import logging
 import os
-import shutil
-import subprocess
+import sys
 import json
-import zipfile
-import requests
-from datetime import datetime, timedelta
-from pathlib import Path
-import threading
 import time
-from typing import Dict, List, Optional, Any  # FIXED: Added Dict import
+import shutil
+import logging
+import subprocess
+from pathlib import Path
+from datetime import datetime, timedelta
+from typing import Dict, List, Optional, Any  # Fixed: Added Dict import
 
-from config.settings import AUTO_UPDATE, VERSION
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+
+from config.settings import AUTO_UPDATER, BASE_DIR, VERSION
 
 logger = logging.getLogger(__name__)
 
+
 class AutoUpdater:
-    """Handles automatic updates during weekends"""
+    """Handles automatic updates during market closures"""
 
     def __init__(self):
-        self.config = AUTO_UPDATE
-        self.update_window = self.config.get("update_window", {"day": "saturday", "time": "02:00"})
-        self.check_interval = self.config.get("check_interval", 3600)
-        self.running = False
-        self.thread = None
+        self.enabled = AUTO_UPDATER.get('enabled', True)
+        self.check_interval = AUTO_UPDATER.get('check_interval_hours', 24)
+        self.auto_install = AUTO_UPDATER.get('auto_install', True)
+        self.backup_before = AUTO_UPDATER.get('backup_before_update', True)
+        self.weekend_only = AUTO_UPDATER.get('update_on_weekend', True)
+        self.update_time = AUTO_UPDATER.get('update_time', '02:00')
+        self.rollback_on_failure = AUTO_UPDATER.get('rollback_on_failure', True)
+        self.version_url = AUTO_UPDER.get('version_url', '')
+        self.repo_url = AUTO_UPDATER.get('repo_url', '')
 
-    def start(self):
-        """Start the auto-updater background thread"""
-        if not self.config.get("enabled", False):
-            logger.info("Auto-updater is disabled")
-            return
+        self.last_check = None
+        self.current_version = VERSION
+        self.latest_version = None
+        self.update_available = False
 
-        self.running = True
-        self.thread = threading.Thread(target=self._update_loop, daemon=True)
-        self.thread.start()
-        logger.info("Auto-updater started")
-
-    def stop(self):
-        """Stop the auto-updater"""
-        self.running = False
-        if self.thread:
-            self.thread.join(timeout=5)
-        logger.info("Auto-updater stopped")
-
-    def _update_loop(self):
-        """Main update loop - checks every hour"""
-        while self.running:
-            try:
-                if self._is_update_time() and self._is_market_closed():
-                    logger.info("Update window reached and markets closed - checking for updates")
-                    self._check_and_update()
-
-                # Sleep for check interval
-                time.sleep(self.check_interval)
-
-            except Exception as e:
-                logger.error(f"Update loop error: {e}")
-                time.sleep(self.check_interval)
-
-    def _is_update_time(self) -> bool:
-        """Check if current time is within update window"""
+    def is_market_closed(self) -> bool:
+        """Check if market is closed (weekend or after hours)"""
         now = datetime.now()
 
-        # Check day
-        target_day = self.update_window.get("day", "saturday").lower()
-        current_day = now.strftime("%A").lower()
-
-        if current_day != target_day:
-            return False
-
-        # Check time (within 1 hour window)
-        target_time = self.update_window.get("time", "02:00")
-        target_hour, target_minute = map(int, target_time.split(":"))
-
-        current_time = now.time()
-        target_datetime = datetime.combine(now.date(), 
-                                           __import__("datetime").time(target_hour, target_minute))
-
-        # Allow 1 hour window
-        time_diff = abs((datetime.combine(now.date(), current_time) - target_datetime).total_seconds())
-
-        return time_diff < 3600  # Within 1 hour
-
-    def _is_market_closed(self) -> bool:
-        """Check if stock market is closed (weekend or holiday)"""
-        now = datetime.now()
-
-        # Check if weekend
+        # Weekend check
         if now.weekday() >= 5:  # Saturday = 5, Sunday = 6
             return True
 
-        # Check if outside market hours (9:30 AM - 4:00 PM ET)
-        # This is a simplified check - for production, check actual market holidays
-        et_time = now - timedelta(hours=5)  # Convert to ET (simplified)
+        # After hours check (assuming US market hours 9:30-16:00 ET)
+        # This is a simplified check - adjust for your timezone
+        hour = now.hour
+        if hour < 9 or hour >= 16:
+            return True
 
-        if et_time.weekday() < 5:  # Weekday
-            market_open = et_time.replace(hour=9, minute=30, second=0)
-            market_close = et_time.replace(hour=16, minute=0, second=0)
+        return False
 
-            if market_open <= et_time <= market_close:
-                return False
+    def is_update_time(self) -> bool:
+        """Check if it's the scheduled update time"""
+        now = datetime.now()
+        update_hour, update_minute = map(int, self.update_time.split(':'))
 
-        return True
+        if now.hour == update_hour and now.minute >= update_minute:
+            return True
+        return False
 
-    def _check_and_update(self):
-        """Check for updates and apply if available"""
+    def check_for_updates(self) -> bool:
+        """Check if new version is available"""
+        if not self.enabled:
+            return False
+
+        # Rate limit checks
+        if self.last_check:
+            time_since = datetime.now() - self.last_check
+            if time_since < timedelta(hours=self.check_interval):
+                return self.update_available
+
         try:
-            # Check for new version
-            latest_version = self._get_latest_version()
-
-            if not latest_version:
-                logger.info("Could not check for updates")
-                return
-
-            if self._version_compare(latest_version, VERSION) <= 0:
-                logger.info(f"Current version {VERSION} is up to date")
-                return
-
-            logger.info(f"New version available: {latest_version}")
-
-            # Backup current installation
-            if self.config.get("backup_before_update", True):
-                if not self._create_backup():
-                    logger.error("Backup failed - aborting update")
-                    return
-
-            # Download update
-            update_package = self._download_update(latest_version)
-            if not update_package:
-                logger.error("Download failed - aborting update")
-                return
-
-            # Apply update
-            if self._apply_update(update_package):
-                logger.info(f"Successfully updated to version {latest_version}")
-                self._restart_bot()
-            else:
-                logger.error("Update failed")
-                if self.config.get("rollback_on_failure", True):
-                    self._rollback()
-
-        except Exception as e:
-            logger.error(f"Update error: {e}")
-            if self.config.get("rollback_on_failure", True):
-                self._rollback()
-
-    def _get_latest_version(self) -> str:
-        """Check GitHub for latest version"""
-        try:
-            # Check GitHub releases
-            url = "https://api.github.com/repos/3D-Magic/OmniBot/releases/latest"
-            response = requests.get(url, timeout=10)
+            # Check GitHub API for latest release
+            import requests
+            response = requests.get(self.version_url, timeout=10)
 
             if response.status_code == 200:
                 data = response.json()
-                return data.get("tag_name", "").replace("v", "")
+                self.latest_version = data.get('tag_name', 'v0.0.0').replace('v', '')
 
-            # Fallback: check version file in repo
-            url = "https://raw.githubusercontent.com/3D-Magic/OmniBot/main/version.txt"
-            response = requests.get(url, timeout=10)
+                # Compare versions
+                if self._version_compare(self.latest_version, self.current_version) > 0:
+                    self.update_available = True
+                    logger.info(f"Update available: {self.current_version} -> {self.latest_version}")
+                else:
+                    self.update_available = False
 
-            if response.status_code == 200:
-                return response.text.strip()
+            self.last_check = datetime.now()
 
         except Exception as e:
-            logger.error(f"Version check error: {e}")
+            logger.error(f"Failed to check for updates: {e}")
+            return False
 
-        return None
+        return self.update_available
 
     def _version_compare(self, v1: str, v2: str) -> int:
-        """Compare two version strings. Returns >0 if v1>v2, <0 if v1<v2, 0 if equal"""
-        parts1 = [int(x) for x in v1.split(".")]
-        parts2 = [int(x) for x in v2.split(".")]
+        """Compare two version strings"""
+        parts1 = [int(x) for x in v1.split('.')]
+        parts2 = [int(x) for x in v2.split('.')]
 
-        for p1, p2 in zip(parts1, parts2):
+        for i in range(max(len(parts1), len(parts2))):
+            p1 = parts1[i] if i < len(parts1) else 0
+            p2 = parts2[i] if i < len(parts2) else 0
+
             if p1 > p2:
                 return 1
             elif p1 < p2:
@@ -186,159 +116,139 @@ class AutoUpdater:
 
         return 0
 
-    def _create_backup(self) -> bool:
-        """Create backup of current installation"""
+    def backup_current(self) -> bool:
+        """Create backup before update"""
+        if not self.backup_before:
+            return True
+
         try:
-            backup_dir = Path("backups") / f"backup_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
-            backup_dir.parent.mkdir(exist_ok=True)
+            backup_dir = Path(BASE_DIR) / 'backups'
+            backup_dir.mkdir(exist_ok=True)
 
-            # Copy current src directory
-            src_dir = Path("src")
-            if src_dir.exists():
-                shutil.copytree(src_dir, backup_dir / "src", ignore=shutil.ignore_patterns("__pycache__", "*.pyc"))
+            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+            backup_path = backup_dir / f'backup_{timestamp}'
 
-            # Copy config
-            config_dir = Path("config")
-            if config_dir.exists():
-                shutil.copytree(config_dir, backup_dir / "config")
+            # Create backup
+            shutil.copytree(BASE_DIR, backup_path, ignore=shutil.ignore_patterns(
+                'venv', '__pycache__', '*.pyc', '.git', 'backups'
+            ))
 
-            # Copy version info
-            with open(backup_dir / "version.txt", "w") as f:
-                f.write(VERSION)
-
-            logger.info(f"Backup created at {backup_dir}")
+            logger.info(f"Backup created: {backup_path}")
             return True
 
         except Exception as e:
-            logger.error(f"Backup error: {e}")
+            logger.error(f"Backup failed: {e}")
             return False
 
-    def _download_update(self, version: str) -> Path:
-        """Download update package"""
+    def perform_update(self) -> bool:
+        """Perform the update"""
+        if not self.update_available:
+            return True
+
+        if self.weekend_only and not self.is_market_closed():
+            logger.info("Waiting for market close to update")
+            return False
+
+        if not self.is_update_time():
+            return False
+
+        logger.info(f"Starting update to version {self.latest_version}")
+
+        # Create backup
+        if not self.backup_current():
+            logger.error("Update aborted - backup failed")
+            return False
+
         try:
-            # Download from GitHub releases
-            url = f"https://github.com/3D-Magic/OmniBot/releases/download/v{version}/omnibot-v{version}.zip"
+            # Download and install update
+            updates_dir = Path(BASE_DIR) / 'updates'
+            updates_dir.mkdir(exist_ok=True)
 
-            update_dir = Path("updates")
-            update_dir.mkdir(exist_ok=True)
+            # Clone latest version
+            update_path = updates_dir / 'latest'
+            if update_path.exists():
+                shutil.rmtree(update_path)
 
-            package_path = update_dir / f"omnibot-v{version}.zip"
+            subprocess.run([
+                'git', 'clone', '--depth', '1', 
+                '--branch', f'v{self.latest_version}',
+                self.repo_url, str(update_path)
+            ], check=True, capture_output=True)
 
-            response = requests.get(url, stream=True, timeout=30)
+            # Apply update
+            self._apply_update(update_path)
 
-            if response.status_code == 200:
-                with open(package_path, "wb") as f:
-                    for chunk in response.iter_content(chunk_size=8192):
-                        f.write(chunk)
+            logger.info("Update completed successfully")
+            self.current_version = self.latest_version
+            self.update_available = False
+            return True
 
-                logger.info(f"Downloaded update to {package_path}")
-                return package_path
+        except Exception as e:
+            logger.error(f"Update failed: {e}")
+
+            if self.rollback_on_failure:
+                logger.info("Rolling back to previous version")
+                self._rollback()
+
+            return False
+
+    def _apply_update(self, update_path: Path):
+        """Apply the update files"""
+        # Copy new files
+        for item in update_path.iterdir():
+            if item.name in ['venv', 'backups', 'updates', 'data']:
+                continue
+
+            dest = Path(BASE_DIR) / item.name
+            if item.is_dir():
+                if dest.exists():
+                    shutil.rmtree(dest)
+                shutil.copytree(item, dest)
             else:
-                logger.error(f"Download failed: HTTP {response.status_code}")
-
-        except Exception as e:
-            logger.error(f"Download error: {e}")
-
-        return None
-
-    def _apply_update(self, package_path: Path) -> bool:
-        """Apply the downloaded update"""
-        try:
-            # Extract update
-            extract_dir = Path("updates") / "extracted"
-            if extract_dir.exists():
-                shutil.rmtree(extract_dir)
-
-            with zipfile.ZipFile(package_path, "r") as zip_ref:
-                zip_ref.extractall(extract_dir)
-
-            # Copy new files
-            src_source = extract_dir / "src"
-            if src_source.exists():
-                src_target = Path("src")
-                if src_target.exists():
-                    shutil.rmtree(src_target)
-                shutil.copytree(src_source, src_target)
-
-            # Update version file
-            with open("version.txt", "w") as f:
-                f.write(self._get_latest_version())
-
-            # Clean up
-            shutil.rmtree(extract_dir)
-            package_path.unlink()
-
-            return True
-
-        except Exception as e:
-            logger.error(f"Update application error: {e}")
-            return False
+                shutil.copy2(item, dest)
 
     def _rollback(self):
         """Rollback to previous version"""
-        try:
-            logger.info("Rolling back to previous version...")
+        # Find latest backup
+        backup_dir = Path(BASE_DIR) / 'backups'
+        if not backup_dir.exists():
+            return
 
-            # Find latest backup
-            backup_dir = Path("backups")
-            if not backup_dir.exists():
-                logger.error("No backups found for rollback")
-                return
+        backups = sorted(backup_dir.iterdir(), key=lambda x: x.stat().st_mtime, reverse=True)
+        if not backups:
+            return
 
-            backups = sorted(backup_dir.glob("backup_*"), reverse=True)
-            if not backups:
-                logger.error("No backups found for rollback")
-                return
+        latest_backup = backups[0]
+        logger.info(f"Rolling back to: {latest_backup}")
 
-            latest_backup = backups[0]
+        # Restore from backup
+        for item in latest_backup.iterdir():
+            dest = Path(BASE_DIR) / item.name
+            if item.is_dir():
+                if dest.exists():
+                    shutil.rmtree(dest)
+                shutil.copytree(item, dest)
+            else:
+                shutil.copy2(item, dest)
 
-            # Restore files
-            src_backup = latest_backup / "src"
-            if src_backup.exists():
-                src_target = Path("src")
-                if src_target.exists():
-                    shutil.rmtree(src_target)
-                shutil.copytree(src_backup, src_target)
+    def run(self):
+        """Main updater loop"""
+        while True:
+            if self.check_for_updates():
+                self.perform_update()
 
-            logger.info(f"Rolled back to {latest_backup}")
+            # Sleep until next check
+            time.sleep(self.check_interval * 3600)
 
-        except Exception as e:
-            logger.error(f"Rollback error: {e}")
 
-    def _restart_bot(self):
-        """Restart the bot after update"""
-        try:
-            logger.info("Restarting OMNIBOT...")
+def start_auto_updater():
+    """Start the auto-updater in background"""
+    updater = AutoUpdater()
 
-            # Create restart flag
-            with open(".restart", "w") as f:
-                f.write(str(datetime.now()))
+    # Run in separate thread
+    import threading
+    thread = threading.Thread(target=updater.run, daemon=True)
+    thread.start()
 
-            # Exit current process - service manager will restart
-            os._exit(0)
-
-        except Exception as e:
-            logger.error(f"Restart error: {e}")
-
-    def check_now(self) -> Dict:
-        """Manual check for updates (returns status)"""
-        latest = self._get_latest_version()
-
-        return {
-            "current_version": VERSION,
-            "latest_version": latest,
-            "update_available": latest and self._version_compare(latest, VERSION) > 0,
-            "can_update": self._is_market_closed()
-        }
-
-    def force_update(self) -> bool:
-        """Force update now (manual trigger)"""
-        if not self._is_market_closed():
-            logger.warning("Markets are open - forcing update not recommended")
-
-        try:
-            self._check_and_update()
-            return True
-        except Exception as e:
-            logger.error(f"Force update error: {e}")
-            return False
+    logger.info("Auto-updater started")
+    return updater

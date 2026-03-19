@@ -1,269 +1,193 @@
 """
-OMNIBOT v2.6 Sentinel - Trading Engine
-Main trading logic and portfolio management
+OMNIBOT Trading Engine
+Handles order execution, position management, and risk controls
 """
 
 import logging
 import time
-import threading
 from datetime import datetime
-from typing import Dict, List, Optional
-import pandas as pd
+from typing import Dict, List, Optional, Any
+from dataclasses import dataclass
 
-from config.settings import TRADING, WATCHLIST, RISK
-from src.core.data_fetcher import DataFetcher
-from src.core.auto_updater import AutoUpdater
-from src.strategies.engine import StrategyEngine
+from config.settings import TRADING, STRATEGIES
 
 logger = logging.getLogger(__name__)
 
 
+@dataclass
+class Position:
+    symbol: str
+    quantity: float
+    entry_price: float
+    current_price: float
+    side: str  # 'long' or 'short'
+    entry_time: datetime
+
+    @property
+    def pnl(self) -> float:
+        if self.side == 'long':
+            return (self.current_price - self.entry_price) * self.quantity
+        else:
+            return (self.entry_price - self.current_price) * self.quantity
+
+    @property
+    def pnl_percent(self) -> float:
+        if self.entry_price == 0:
+            return 0.0
+        if self.side == 'long':
+            return ((self.current_price - self.entry_price) / self.entry_price) * 100
+        else:
+            return ((self.entry_price - self.current_price) / self.entry_price) * 100
+
+
 class TradingEngine:
-    """Main trading engine that coordinates all components"""
+    """Main trading engine for OMNIBOT"""
 
     def __init__(self):
-        self.config = TRADING
-        self.running = False
-        self.positions = {}
-        self.cash = self.config.get("paper_capital", 100000.0)
-        self.total_value = self.cash
-        self.day_pnl = 0.0
-        self.trades_today = 0
+        self.mode = TRADING.get('mode', 'paper')
+        self.max_positions = TRADING.get('max_positions', 10)
+        self.risk_per_trade = TRADING.get('risk_per_trade', 0.02)
+        self.max_daily_loss = TRADING.get('max_daily_loss', 0.05)
+        self.paper_balance = TRADING.get('paper_balance', 10000.0)
+        self.watchlist = TRADING.get('watchlist', [])
 
-        # Initialize components
-        self.data_fetcher = DataFetcher()
-        self.strategy_engine = StrategyEngine()
-        self.auto_updater = AutoUpdater()
+        self.positions: Dict[str, Position] = {}
+        self.orders_history: List[Dict] = []
+        self.daily_pnl = 0.0
+        self.total_trades = 0
+        self.winning_trades = 0
+        self.is_running = False
 
-        # Threads
-        self.main_thread = None
-        self.monitor_thread = None
-
-        logger.info("Trading Engine initialized")
+        logger.info(f"TradingEngine initialized (mode: {self.mode})")
 
     def start(self):
         """Start the trading engine"""
-        if self.running:
-            logger.warning("Trading engine already running")
-            return
-
-        self.running = True
-        logger.info(f"Starting OMNIBOT Trading Engine in {self.config.get('mode', 'paper')} mode")
-
-        # Start auto-updater
-        self.auto_updater.start()
-
-        # Start strategy engine
-        self.strategy_engine.start()
-
-        # Start main trading loop
-        self.main_thread = threading.Thread(target=self._trading_loop, daemon=True)
-        self.main_thread.start()
-
-        # Start monitoring thread
-        self.monitor_thread = threading.Thread(target=self._monitor_loop, daemon=True)
-        self.monitor_thread.start()
-
-        logger.info("Trading engine started successfully")
+        self.is_running = True
+        logger.info("Trading engine started")
 
     def stop(self):
         """Stop the trading engine"""
-        logger.info("Stopping trading engine...")
-        self.running = False
-
-        # Stop components
-        self.auto_updater.stop()
-        self.strategy_engine.stop()
-
-        # Wait for threads
-        if self.main_thread:
-            self.main_thread.join(timeout=5)
-        if self.monitor_thread:
-            self.monitor_thread.join(timeout=5)
-
+        self.is_running = False
         logger.info("Trading engine stopped")
 
-    def _trading_loop(self):
-        """Main trading loop"""
-        while self.running:
-            try:
-                # Check if market is open
-                if not self._is_market_open():
-                    logger.debug("Market closed - waiting")
-                    time.sleep(60)
-                    continue
-
-                # Get signals from strategies
-                signals = self.strategy_engine.generate_signals()
-
-                # Process signals
-                for signal in signals:
-                    self._process_signal(signal)
-
-                # Update portfolio value
-                self._update_portfolio()
-
-                # Sleep between cycles
-                time.sleep(10)
-
-            except Exception as e:
-                logger.error(f"Trading loop error: {e}")
-                time.sleep(60)
-
-    def _monitor_loop(self):
-        """Monitoring and logging loop"""
-        while self.running:
-            try:
-                # Log status every 5 minutes
-                logger.info(f"Portfolio: ${self.total_value:,.2f} | Day P&L: ${self.day_pnl:,.2f} | Positions: {len(self.positions)}")
-                time.sleep(300)
-            except Exception as e:
-                logger.error(f"Monitor loop error: {e}")
-                time.sleep(60)
-
-    def _is_market_open(self) -> bool:
-        """Check if US market is open"""
-        now = datetime.now()
-
-        # Check weekday (Mon-Fri = 0-4)
-        if now.weekday() >= 5:
+    def enter_position(self, symbol: str, side: str, quantity: float, 
+                       price: float, strategy: str = "manual") -> bool:
+        """Enter a new position"""
+        if not self.is_running:
+            logger.warning("Cannot enter position - engine not running")
             return False
 
-        # Simplified market hours check (9:30 AM - 4:00 PM ET)
-        # Note: This is simplified - doesn't account for timezone or holidays
-        return True  # Allow trading for testing
-
-    def _process_signal(self, signal: Dict):
-        """Process a trading signal"""
-        symbol = signal.get("symbol")
-        action = signal.get("action")  # buy, sell, hold
-        confidence = signal.get("confidence", 0)
-
-        if action == "hold" or confidence < 0.6:
-            return
-
-        # Check risk limits
-        if not self._check_risk_limits(symbol, action):
-            return
-
-        # Execute trade
-        if action == "buy":
-            self._execute_buy(symbol, signal)
-        elif action == "sell":
-            self._execute_sell(symbol, signal)
-
-    def _check_risk_limits(self, symbol: str, action: str) -> bool:
-        """Check if trade violates risk limits"""
-        # Check max positions
-        max_positions = self.config.get("max_positions", 10)
-        if len(self.positions) >= max_positions and action == "buy":
-            logger.warning(f"Max positions ({max_positions}) reached")
+        if len(self.positions) >= self.max_positions:
+            logger.warning(f"Max positions ({self.max_positions}) reached")
             return False
 
-        # Check daily loss limit
-        max_daily_loss = self.config.get("max_daily_loss", 0.05)
-        if self.day_pnl < -self.total_value * max_daily_loss:
-            logger.warning("Daily loss limit reached - stopping trading")
+        if symbol in self.positions:
+            logger.warning(f"Position already exists for {symbol}")
+            return False
+
+        position = Position(
+            symbol=symbol,
+            quantity=quantity,
+            entry_price=price,
+            current_price=price,
+            side=side,
+            entry_time=datetime.now()
+        )
+
+        self.positions[symbol] = position
+
+        order = {
+            'symbol': symbol,
+            'side': side,
+            'quantity': quantity,
+            'price': price,
+            'strategy': strategy,
+            'timestamp': datetime.now().isoformat(),
+            'type': 'entry'
+        }
+        self.orders_history.append(order)
+
+        logger.info(f"Entered {side} position: {symbol} @ ${price:.2f} x {quantity}")
+        return True
+
+    def exit_position(self, symbol: str, price: float, 
+                      reason: str = "manual") -> Optional[float]:
+        """Exit an existing position"""
+        if symbol not in self.positions:
+            logger.warning(f"No position found for {symbol}")
+            return None
+
+        position = self.positions[symbol]
+        position.current_price = price
+        pnl = position.pnl
+
+        order = {
+            'symbol': symbol,
+            'side': 'exit',
+            'quantity': position.quantity,
+            'price': price,
+            'pnl': pnl,
+            'pnl_percent': position.pnl_percent,
+            'reason': reason,
+            'timestamp': datetime.now().isoformat(),
+            'type': 'exit'
+        }
+        self.orders_history.append(order)
+
+        # Update stats
+        self.total_trades += 1
+        if pnl > 0:
+            self.winning_trades += 1
+        self.daily_pnl += pnl
+
+        if self.mode == 'paper':
+            self.paper_balance += pnl
+
+        del self.positions[symbol]
+
+        logger.info(f"Exited {symbol} @ ${price:.2f} | P&L: ${pnl:.2f} ({position.pnl_percent:.2f}%)")
+        return pnl
+
+    def update_prices(self, prices: Dict[str, float]):
+        """Update current prices for all positions"""
+        for symbol, price in prices.items():
+            if symbol in self.positions:
+                self.positions[symbol].current_price = price
+
+    def get_portfolio_value(self) -> float:
+        """Calculate total portfolio value"""
+        if self.mode == 'paper':
+            positions_value = sum(p.current_price * p.quantity for p in self.positions.values())
+            return self.paper_balance + positions_value
+        return 0.0
+
+    def get_stats(self) -> Dict[str, Any]:
+        """Get trading statistics"""
+        return {
+            'mode': self.mode,
+            'is_running': self.is_running,
+            'positions_count': len(self.positions),
+            'total_trades': self.total_trades,
+            'win_rate': (self.winning_trades / self.total_trades * 100) if self.total_trades > 0 else 0,
+            'daily_pnl': self.daily_pnl,
+            'portfolio_value': self.get_portfolio_value(),
+            'paper_balance': self.paper_balance if self.mode == 'paper' else None
+        }
+
+    def check_risk_limits(self) -> bool:
+        """Check if risk limits are breached"""
+        portfolio_value = self.get_portfolio_value()
+        if portfolio_value == 0:
+            return True
+
+        daily_loss_percent = abs(self.daily_pnl) / portfolio_value
+        if daily_loss_percent >= self.max_daily_loss:
+            logger.warning(f"Daily loss limit reached: {daily_loss_percent:.2%}")
             return False
 
         return True
 
-    def _execute_buy(self, symbol: str, signal: Dict):
-        """Execute buy order"""
-        try:
-            # Get current price
-            price = self.data_fetcher.get_current_price(symbol)
-            if not price:
-                logger.error(f"Could not get price for {symbol}")
-                return
 
-            # Calculate position size
-            risk_per_trade = self.config.get("risk_per_trade", 0.02)
-            position_value = self.total_value * risk_per_trade
-            quantity = int(position_value / price)
-
-            if quantity < 1:
-                logger.warning(f"Insufficient funds to buy {symbol}")
-                return
-
-            # Check available cash
-            cost = quantity * price
-            if cost > self.cash:
-                logger.warning(f"Insufficient cash to buy {symbol}")
-                return
-
-            # Execute paper trade
-            self.cash -= cost
-            self.positions[symbol] = {
-                "quantity": quantity,
-                "avg_price": price,
-                "current_price": price,
-                "value": cost
-            }
-
-            self.trades_today += 1
-            logger.info(f"BUY {quantity} {symbol} @ ${price:.2f} = ${cost:.2f}")
-
-        except Exception as e:
-            logger.error(f"Buy execution error: {e}")
-
-    def _execute_sell(self, symbol: str, signal: Dict):
-        """Execute sell order"""
-        try:
-            if symbol not in self.positions:
-                logger.warning(f"No position in {symbol} to sell")
-                return
-
-            position = self.positions[symbol]
-            quantity = position["quantity"]
-
-            # Get current price
-            price = self.data_fetcher.get_current_price(symbol)
-            if not price:
-                price = position["current_price"]
-
-            # Calculate proceeds
-            proceeds = quantity * price
-            pnl = proceeds - (quantity * position["avg_price"])
-
-            # Update cash and remove position
-            self.cash += proceeds
-            self.day_pnl += pnl
-            del self.positions[symbol]
-
-            self.trades_today += 1
-            logger.info(f"SELL {quantity} {symbol} @ ${price:.2f} = ${proceeds:.2f} (P&L: ${pnl:.2f})")
-
-        except Exception as e:
-            logger.error(f"Sell execution error: {e}")
-
-    def _update_portfolio(self):
-        """Update portfolio values"""
-        try:
-            total = self.cash
-
-            for symbol, position in self.positions.items():
-                # Get current price
-                price = self.data_fetcher.get_current_price(symbol)
-                if price:
-                    position["current_price"] = price
-                    position["value"] = position["quantity"] * price
-
-                total += position["value"]
-
-            self.total_value = total
-
-        except Exception as e:
-            logger.error(f"Portfolio update error: {e}")
-
-    def get_status(self) -> Dict:
-        """Get current trading status"""
-        return {
-            "running": self.running,
-            "mode": self.config.get("mode", "paper"),
-            "total_value": self.total_value,
-            "cash": self.cash,
-            "positions_count": len(self.positions),
-            "day_pnl": self.day_pnl,
-            "trades_today": self.trades_today
-        }
+def create_engine() -> TradingEngine:
+    """Factory function to create trading engine"""
+    return TradingEngine()

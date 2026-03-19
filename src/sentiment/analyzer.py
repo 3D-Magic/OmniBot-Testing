@@ -1,13 +1,13 @@
 """
-OMNIBOT v2.6 Sentinel - Sentiment Analyzer
-Free sentiment analysis using Reddit and RSS feeds
+OMNIBOT Sentiment Analyzer
+Analyzes market sentiment from free sources
 """
 
 import logging
 import re
-from typing import Dict, List
-from collections import defaultdict
+from typing import Dict, List, Optional, Any
 from datetime import datetime, timedelta
+from collections import defaultdict
 
 from config.settings import SENTIMENT
 
@@ -15,138 +15,171 @@ logger = logging.getLogger(__name__)
 
 
 class SentimentAnalyzer:
-    """Analyzes market sentiment from free sources"""
+    """Analyzes market sentiment from Reddit and RSS feeds"""
 
     def __init__(self):
-        self.config = SENTIMENT
-        self.cache = {}
-        self.last_update = None
+        self.enabled = SENTIMENT.get('enabled', True)
+        self.sources = SENTIMENT.get('sources', [])
+        self.subreddits = SENTIMENT.get('reddit_subreddits', [])
+        self.rss_feeds = SENTIMENT.get('rss_feeds', [])
+        self.update_interval = SENTIMENT.get('update_interval_minutes', 30)
+        self.min_mentions = SENTIMENT.get('min_mentions', 5)
 
-        # Initialize sources
-        self.sources = {}
-        if "reddit" in self.config.get("sources", []):
-            self.sources["reddit"] = RedditSource(self.config)
-        if "rss" in self.config.get("sources", []):
-            self.sources["rss"] = RSSSource(self.config)
+        self.cache: Dict[str, Any] = {}
+        self.last_update: Optional[datetime] = None
 
-        logger.info(f"Sentiment Analyzer initialized with {len(self.sources)} sources")
+        logger.info(f"SentimentAnalyzer initialized (sources: {self.sources})")
 
-    def analyze(self, symbols: List[str] = None) -> Dict:
-        """Analyze sentiment for given symbols"""
-        results = {
-            "overall": 0.0,
-            "trend": "neutral",
-            "sources": {},
-            "symbols": {},
-            "timestamp": datetime.now().isoformat()
+    def _analyze_text(self, text: str) -> float:
+        """Simple sentiment analysis using keyword matching"""
+        text = text.lower()
+
+        positive_words = ['bull', 'bullish', 'moon', 'rocket', 'gain', 'profit', 
+                         'up', 'rise', 'rising', 'growth', 'buy', 'long', 'calls']
+        negative_words = ['bear', 'bearish', 'crash', 'dump', 'loss', 'lose',
+                         'down', 'fall', 'falling', 'sell', 'short', 'puts', 'panic']
+
+        pos_count = sum(1 for word in positive_words if word in text)
+        neg_count = sum(1 for word in negative_words if word in text)
+
+        total = pos_count + neg_count
+        if total == 0:
+            return 0.0
+
+        return (pos_count - neg_count) / total
+
+    def fetch_reddit_sentiment(self, symbol: str) -> Dict[str, Any]:
+        """Fetch sentiment from Reddit (mock implementation)"""
+        # In production, use praw library with proper API credentials
+        # This is a simplified version
+
+        mentions = defaultdict(list)
+
+        # Mock data for demonstration
+        mock_posts = [
+            f"{symbol} looking bullish today! 🚀",
+            f"Should I buy {symbol}?",
+            f"{symbol} earnings coming up",
+        ]
+
+        sentiments = []
+        for post in mock_posts:
+            sentiment = self._analyze_text(post)
+            sentiments.append(sentiment)
+
+        avg_sentiment = sum(sentiments) / len(sentiments) if sentiments else 0
+
+        return {
+            'source': 'reddit',
+            'mentions': len(mock_posts),
+            'avg_sentiment': avg_sentiment,
+            'bullish_ratio': sum(1 for s in sentiments if s > 0) / len(sentiments) if sentiments else 0,
+            'timestamp': datetime.now().isoformat()
         }
 
+    def fetch_rss_sentiment(self, symbol: str) -> Dict[str, Any]:
+        """Fetch sentiment from RSS feeds"""
         try:
-            # Collect sentiment from all sources
-            all_mentions = defaultdict(list)
+            import feedparser
 
-            for source_name, source in self.sources.items():
+            all_entries = []
+            for feed_url in self.rss_feeds:
                 try:
-                    mentions = source.fetch_mentions(symbols)
-                    all_mentions[source_name].extend(mentions)
-
-                    # Calculate source-specific sentiment
-                    source_sentiment = self._calculate_sentiment(mentions)
-                    results["sources"][source_name] = {
-                        "score": source_sentiment,
-                        "volume": len(mentions)
-                    }
-
+                    feed = feedparser.parse(feed_url)
+                    all_entries.extend(feed.entries[:10])  # Last 10 entries
                 except Exception as e:
-                    logger.error(f"Error fetching from {source_name}: {e}")
+                    logger.warning(f"Failed to parse RSS feed {feed_url}: {e}")
 
-            # Calculate per-symbol sentiment
-            if symbols:
-                for symbol in symbols:
-                    symbol_mentions = []
-                    for source_mentions in all_mentions.values():
-                        symbol_mentions.extend([m for m in source_mentions if symbol.upper() in m.get("text", "").upper()])
+            # Filter for symbol mentions
+            symbol_mentions = []
+            for entry in all_entries:
+                title = entry.get('title', '')
+                summary = entry.get('summary', '')
 
-                    results["symbols"][symbol] = self._calculate_sentiment(symbol_mentions)
+                if symbol.upper() in title.upper() or symbol.upper() in summary.upper():
+                    text = f"{title} {summary}"
+                    sentiment = self._analyze_text(text)
+                    symbol_mentions.append({
+                        'title': title,
+                        'sentiment': sentiment,
+                        'published': entry.get('published', '')
+                    })
 
-            # Calculate overall sentiment
-            if results["sources"]:
-                overall = sum(s["score"] for s in results["sources"].values()) / len(results["sources"])
-                results["overall"] = overall
-                results["trend"] = "positive" if overall > 0.2 else "negative" if overall < -0.2 else "neutral"
+            if symbol_mentions:
+                avg_sentiment = sum(m['sentiment'] for m in symbol_mentions) / len(symbol_mentions)
+            else:
+                avg_sentiment = 0
 
-        except Exception as e:
-            logger.error(f"Sentiment analysis error: {e}")
+            return {
+                'source': 'rss',
+                'mentions': len(symbol_mentions),
+                'avg_sentiment': avg_sentiment,
+                'articles': symbol_mentions[:5],  # Top 5
+                'timestamp': datetime.now().isoformat()
+            }
+
+        except ImportError:
+            logger.warning("feedparser not installed")
+            return {'source': 'rss', 'mentions': 0, 'avg_sentiment': 0}
+
+    def analyze_symbol(self, symbol: str) -> Dict[str, Any]:
+        """Analyze sentiment for a specific symbol"""
+        if not self.enabled:
+            return {'enabled': False}
+
+        results = {
+            'symbol': symbol,
+            'timestamp': datetime.now().isoformat(),
+            'sources': {}
+        }
+
+        total_sentiment = 0
+        source_count = 0
+
+        if 'reddit' in self.sources:
+            reddit_data = self.fetch_reddit_sentiment(symbol)
+            results['sources']['reddit'] = reddit_data
+            if reddit_data['mentions'] >= self.min_mentions:
+                total_sentiment += reddit_data['avg_sentiment']
+                source_count += 1
+
+        if 'rss' in self.sources:
+            rss_data = self.fetch_rss_sentiment(symbol)
+            results['sources']['rss'] = rss_data
+            if rss_data['mentions'] >= self.min_mentions:
+                total_sentiment += rss_data['avg_sentiment']
+                source_count += 1
+
+        # Calculate overall sentiment
+        if source_count > 0:
+            overall = total_sentiment / source_count
+        else:
+            overall = 0
+
+        results['overall_sentiment'] = overall
+        results['sentiment_label'] = self._label_sentiment(overall)
 
         return results
 
-    def _calculate_sentiment(self, mentions: List[Dict]) -> float:
-        """Calculate average sentiment score"""
-        if not mentions:
-            return 0.0
+    def _label_sentiment(self, score: float) -> str:
+        """Convert sentiment score to label"""
+        if score > 0.3:
+            return "very_bullish"
+        elif score > 0.1:
+            return "bullish"
+        elif score < -0.3:
+            return "very_bearish"
+        elif score < -0.1:
+            return "bearish"
+        else:
+            return "neutral"
 
-        scores = [m.get("sentiment", 0) for m in mentions]
-        return sum(scores) / len(scores)
-
-
-class RedditSource:
-    """Reddit sentiment source"""
-
-    def __init__(self, config):
-        self.config = config
-        self.subreddits = config.get("reddit_subreddits", ["wallstreetbets", "stocks", "investing"])
-
-    def fetch_mentions(self, symbols: List[str] = None) -> List[Dict]:
-        """Fetch mentions from Reddit (mock implementation)"""
-        # In production, use PRAW library with Reddit API
-        # This is a simplified mock for demonstration
-        mentions = []
-
-        # Mock data for testing
-        mock_posts = [
-            {"text": "AAPL looking bullish today! 🚀", "sentiment": 0.8},
-            {"text": "TSLA is overvalued imo", "sentiment": -0.3},
-            {"text": "NVDA crushing earnings!", "sentiment": 0.9},
-            {"text": "Market is crashing help", "sentiment": -0.7},
-            {"text": "MSFT stable growth", "sentiment": 0.4}
-        ]
-
-        for post in mock_posts:
-            mentions.append({
-                "source": "reddit",
-                "text": post["text"],
-                "sentiment": post["sentiment"],
-                "timestamp": datetime.now().isoformat()
-            })
-
-        return mentions
+    def get_market_sentiment(self) -> Dict[str, Any]:
+        """Get overall market sentiment"""
+        # Analyze SPY as market proxy
+        return self.analyze_symbol("SPY")
 
 
-class RSSSource:
-    """RSS feed sentiment source"""
-
-    def __init__(self, config):
-        self.config = config
-        self.feeds = config.get("rss_feeds", [])
-
-    def fetch_mentions(self, symbols: List[str] = None) -> List[Dict]:
-        """Fetch mentions from RSS feeds (mock implementation)"""
-        # In production, use feedparser library
-        mentions = []
-
-        # Mock data
-        mock_headlines = [
-            {"text": "Tech stocks rally on strong earnings", "sentiment": 0.6},
-            {"text": "Market volatility increases amid uncertainty", "sentiment": -0.4},
-            {"text": "Analysts upgrade semiconductor sector", "sentiment": 0.5}
-        ]
-
-        for headline in mock_headlines:
-            mentions.append({
-                "source": "rss",
-                "text": headline["text"],
-                "sentiment": headline["sentiment"],
-                "timestamp": datetime.now().isoformat()
-            })
-
-        return mentions
+def create_sentiment_analyzer() -> SentimentAnalyzer:
+    """Factory function"""
+    return SentimentAnalyzer()

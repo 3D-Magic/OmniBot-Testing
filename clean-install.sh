@@ -1,115 +1,141 @@
 #!/bin/bash
 # OMNIBOT v2.6 Sentinel - Clean Install Script
-# WARNING: This will DELETE all old OMNIBOT data!
+# Wipes old versions and installs fresh
 
 set -e
 
-echo "🧹 OMNIBOT v2.6 Sentinel - Clean Installer"
-echo "=========================================="
-echo ""
-read -p "⚠️  This will DELETE all old OMNIBOT data! Continue? (yes/no): " confirm
+REPO_URL="https://github.com/3D-Magic/OmniBot-Testing"
+INSTALL_DIR="$HOME/OmniBot-v2.6"
+BACKUP_DIR="$HOME/.omnibot-backups"
 
-if [ "$confirm" != "yes" ]; then
-    echo "❌ Installation cancelled"
-    exit 1
-fi
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m'
 
-echo ""
-echo "🛑 Stopping old OMNIBOT services..."
+echo -e "${BLUE}"
+echo "╔══════════════════════════════════════════════════════════╗"
+echo "║                                                          ║"
+echo "║   🤖  OMNIBOT v2.6 Sentinel - Clean Installer            ║"
+echo "║                                                          ║"
+echo "╚══════════════════════════════════════════════════════════╝"
+echo -e "${NC}"
 
-# Stop any running OMNIBOT services
-sudo systemctl stop omnibot 2>/dev/null || true
-sudo systemctl stop omnibot-v2.5 2>/dev/null || true
-sudo systemctl disable omnibot 2>/dev/null || true
-sudo systemctl disable omnibot-v2.5 2>/dev/null || true
+log() {
+    echo -e "${GREEN}[$(date +'%H:%M:%S')] $1${NC}"
+}
 
-# Kill any running Python processes related to OMNIBOT
-pkill -f "omnibot" 2>/dev/null || true
-pkill -f "main.py" 2>/dev/null || true
+warn() {
+    echo -e "${YELLOW}[$(date +'%H:%M:%S')] $1${NC}"
+}
 
-sleep 2
+# Backup existing installation
+backup_existing() {
+    if [ -d "$INSTALL_DIR" ]; then
+        log "Backing up existing installation..."
+        mkdir -p "$BACKUP_DIR"
+        BACKUP_NAME="backup-$(date +%Y%m%d-%H%M%S).tar.gz"
+        tar -czf "$BACKUP_DIR/$BACKUP_NAME" -C "$HOME" "$(basename "$INSTALL_DIR")" 2>/dev/null || true
+        log "Backup saved to: $BACKUP_DIR/$BACKUP_NAME"
+    fi
+}
 
-echo "🗑️  Removing old OMNIBOT files..."
+# Kill running processes
+cleanup_processes() {
+    log "Cleaning up old processes..."
+    pkill -9 -f "omnibot" 2>/dev/null || true
+    pkill -9 -f ngrok 2>/dev/null || true
+    tmux kill-server 2>/dev/null || true
+    sleep 2
+}
 
-# Remove old directories
-rm -rf ~/OmniBot
-rm -rf ~/OmniBot-v2.5
-rm -rf ~/OmniBot-v2.5.1
-rm -rf ~/OmniBot-v2.6
-sudo rm -rf /opt/omnibot
+# Remove old installation
+remove_old() {
+    if [ -d "$INSTALL_DIR" ]; then
+        warn "Removing old installation at $INSTALL_DIR..."
+        rm -rf "$INSTALL_DIR"
+    fi
 
-# Remove old service files
-sudo rm -f /etc/systemd/system/omnibot*.service
-sudo systemctl daemon-reload
+    # Clean up any stray files
+    rm -f "$HOME/omnibot-v2.6*.zip" 2>/dev/null || true
+}
 
-# Remove old logs and data (optional - comment out to keep)
-rm -rf ~/omnibot_logs
-rm -rf ~/.omnibot
-sudo rm -rf /var/log/omnibot*
+# Download and install
+install_new() {
+    log "Downloading OMNIBOT v2.6 Sentinel..."
+    cd "$HOME"
 
-echo "📥 Downloading OMNIBOT v2.6 Sentinel..."
+    # Download from main branch
+    wget -q --show-progress "$REPO_URL/archive/refs/heads/main.zip" -O omnibot-v2.6.zip || {
+        error "Failed to download from GitHub"
+        exit 1
+    }
 
-# Create new directory
-mkdir -p ~/OmniBot-v2.6
-cd ~/OmniBot-v2.6
+    log "Extracting..."
+    unzip -q omnibot-v2.6.zip
+    mv OmniBot-Testing-main OmniBot-v2.6
+    rm omnibot-v2.6.zip
 
-# Download from GitHub (public repo)
-wget -O omnibot-v2.6-sentinel.zip "https://github.com/3D-Magic/OmniBot-Testing/archive/refs/heads/main.zip"
+    cd "$INSTALL_DIR"
 
-echo "📦 Extracting..."
+    # Fix tensorflow issue (Python 3.13 compatibility)
+    log "Applying Python 3.13 compatibility fixes..."
+    sed -i '/tensorflow/d' requirements.txt 2>/dev/null || true
+    sed -i '/keras/d' requirements.txt 2>/dev/null || true
 
-unzip -o omnibot-v2.6-sentinel.zip
-mv OmniBot-Testing-main/* .
-mv OmniBot-Testing-main/.* . 2>/dev/null || true
-rmdir OmniBot-Testing-main
-rm omnibot-v2.6-sentinel.zip
+    # Run setup
+    log "Running setup..."
+    chmod +x setup.sh
+    ./setup.sh
 
-echo "🔧 Setting up Python environment..."
+    # Make scripts executable
+    chmod +x scripts/omnibot.sh 2>/dev/null || true
+    chmod +x clean-install.sh 2>/dev/null || true
+}
 
-# Create fresh virtual environment
-rm -rf venv
-python3 -m venv venv
-source venv/bin/activate
+# Create symlink for global access
+create_symlink() {
+    log "Creating global command..."
+    mkdir -p "$HOME/.local/bin"
+    ln -sf "$INSTALL_DIR/scripts/omnibot.sh" "$HOME/.local/bin/omnibot" 2>/dev/null || true
 
-# Upgrade pip
-pip install --upgrade pip wheel setuptools
+    if [[ ":$PATH:" != *":$HOME/.local/bin:"* ]]; then
+        warn "Add to your PATH: export PATH="\$HOME/.local/bin:\$PATH""
+    fi
+}
 
-echo "📚 Installing dependencies..."
+# Main
+main() {
+    log "Starting clean installation..."
 
-pip install -r requirements.txt
+    backup_existing
+    cleanup_processes
+    remove_old
+    install_new
+    create_symlink
 
-# Download NLTK data
-python -c "import nltk; nltk.download('punkt', quiet=True); nltk.download('stopwords', quiet=True); nltk.download('vader_lexicon', quiet=True)" 2>/dev/null || true
+    echo ""
+    echo -e "${GREEN}"
+    echo "╔══════════════════════════════════════════════════════════╗"
+    echo "║                                                          ║"
+    echo "║   ✅  Installation Complete!                             ║"
+    echo "║                                                          ║"
+    echo "╚══════════════════════════════════════════════════════════╝"
+    echo -e "${NC}"
+    echo ""
+    log "OMNIBOT v2.6 Sentinel is ready!"
+    echo ""
+    echo "Quick Start:"
+    echo "  cd $INSTALL_DIR"
+    echo "  ./scripts/omnibot.sh start --ngrok"
+    echo ""
+    echo "Or use global command (if PATH is set):"
+    echo "  omnibot start --ngrok"
+    echo ""
+    echo "Access:"
+    echo "  Local:    http://localhost:8081"
+    echo "  External: https://xxxx.ngrok-free.dev (after starting with --ngrok)"
+}
 
-echo "📁 Creating directories..."
-
-mkdir -p data/cache
-mkdir -p data/logs
-mkdir -p data/backtests
-mkdir -p backups
-mkdir -p updates
-
-echo "🔐 Setting permissions..."
-
-chmod +x src/main.py
-chmod +x setup.sh
-chmod +x scripts/omnibot.sh
-
-# Create symlink for easy access
-ln -sf ~/OmniBot-v2.6 ~/OmniBot
-
-echo ""
-echo "✅ OMNIBOT v2.6 Sentinel installed!"
-echo ""
-echo "🚀 Next steps:"
-echo "   1. Configure API keys: python src/main.py --setup"
-echo "   2. Test dashboard:     python src/main.py --mode dashboard"
-echo "   3. Start trading:      python src/main.py --mode trading"
-echo "   4. Install service:    sudo cp scripts/omnibot.service /etc/systemd/system/"
-echo ""
-echo "📂 Location: ~/OmniBot-v2.6"
-echo "🌐 Dashboard: http://$(hostname -I | awk '{print $1}'):8080"
-echo ""
-echo "💡 For external access with ngrok:"
-echo "   python src/main.py --mode dashboard --ngrok"
-echo ""
+main "$@"

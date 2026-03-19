@@ -1,124 +1,130 @@
 #!/bin/bash
-# OMNIBOT v2.6 Sentinel Setup Script
-# Run this on your Raspberry Pi to install dependencies
+# OMNIBOT v2.6 Sentinel - Setup Script
 
 set -e
 
-echo "🤖 OMNIBOT v2.6 Sentinel Setup"
-echo "==============================="
-echo ""
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+RED='\033[0;31m'
+NC='\033[0m'
 
-# Check if running on Raspberry Pi
-if [[ $(uname -m) == "aarch64" ]] || [[ $(uname -m) == "armv7l" ]]; then
-    echo "✅ Raspberry Pi detected"
-else
-    echo "⚠️  Not running on Raspberry Pi - some optimizations may not apply"
-fi
+log() {
+    echo -e "${GREEN}[SETUP] $1${NC}"
+}
 
-# Update system
-echo "📦 Updating system packages..."
-sudo apt-get update
-sudo apt-get upgrade -y
+warn() {
+    echo -e "${YELLOW}[SETUP] $1${NC}"
+}
 
-# Install system dependencies
-echo "🔧 Installing system dependencies..."
-sudo apt-get install -y \
-    python3 \
-    python3-pip \
-    python3-venv \
-    git \
-    wget \
-    curl \
-    htop \
-    nano \
-    vim
+error() {
+    echo -e "${RED}[SETUP] $1${NC}"
+}
 
 # Check Python version
-PYTHON_VERSION=$(python3 --version 2>&1 | awk '{print $2}')
-echo "✅ Python version: $PYTHON_VERSION"
+check_python() {
+    log "Checking Python..."
+    if ! command -v python3 &> /dev/null; then
+        error "Python 3 is not installed"
+        exit 1
+    fi
+
+    PYTHON_VERSION=$(python3 --version 2>&1 | awk '{print $2}')
+    log "Found Python $PYTHON_VERSION"
+
+    # Check if Python 3.8+
+    MAJOR=$(echo "$PYTHON_VERSION" | cut -d. -f1)
+    MINOR=$(echo "$PYTHON_VERSION" | cut -d. -f2)
+
+    if [ "$MAJOR" -lt 3 ] || ([ "$MAJOR" -eq 3 ] && [ "$MINOR" -lt 8 ]); then
+        error "Python 3.8+ required"
+        exit 1
+    fi
+}
 
 # Create virtual environment
-echo "🐍 Creating Python virtual environment..."
-if [ -d "venv" ]; then
-    echo "Virtual environment exists, removing old one..."
-    rm -rf venv
-fi
+setup_venv() {
+    log "Setting up virtual environment..."
 
-python3 -m venv venv
-source venv/bin/activate
+    if [ -d "venv" ]; then
+        warn "Virtual environment exists, removing..."
+        rm -rf venv
+    fi
 
-# Upgrade pip
-echo "⬆️  Upgrading pip..."
-pip install --upgrade pip wheel setuptools
+    python3 -m venv venv
+    source venv/bin/activate
 
-# Install Python dependencies
-echo "📚 Installing Python dependencies..."
-pip install -r requirements.txt
+    log "Upgrading pip..."
+    pip install --upgrade pip
+}
 
-# Download NLTK data
-echo "🧠 Downloading NLTK data..."
-python -c "import nltk; nltk.download('punkt', quiet=True); nltk.download('stopwords', quiet=True); nltk.download('vader_lexicon', quiet=True)" || echo "⚠️  NLTK download failed, will retry on first run"
+# Install dependencies
+install_deps() {
+    log "Installing dependencies..."
+
+    # Fix for Python 3.13 - remove incompatible packages
+    if [ -f "requirements.txt" ]; then
+        # Remove tensorflow/keras (not compatible with Python 3.13 on ARM)
+        grep -v -E "^(tensorflow|keras)" requirements.txt > requirements-fixed.txt || true
+        mv requirements-fixed.txt requirements.txt
+    fi
+
+    pip install -r requirements.txt
+
+    # Install additional dashboard dependencies if missing
+    pip install flask-socketio eventlet pyngrok 2>/dev/null || true
+
+    # Download NLTK data
+    log "Downloading NLTK data..."
+    python3 -c "import nltk; nltk.download('punkt', quiet=True); nltk.download('stopwords', quiet=True)" 2>/dev/null || true
+}
 
 # Create directories
-echo "📁 Creating directories..."
-mkdir -p data/cache data/logs data/backtests backups updates
+setup_dirs() {
+    log "Creating directories..."
+    mkdir -p data/cache data/logs data/backtests backups updates
+    mkdir -p src/dashboard/templates
+    chmod +x src/main.py 2>/dev/null || true
+}
 
-# Set permissions
-echo "🔐 Setting permissions..."
-chmod +x src/main.py
+# Make scripts executable
+setup_scripts() {
+    log "Setting up scripts..."
+    chmod +x scripts/omnibot.sh 2>/dev/null || true
+    chmod +x clean-install.sh 2>/dev/null || true
 
-# Create systemd service file
-echo "⚙️  Creating systemd service..."
-sudo tee /etc/systemd/system/omnibot.service > /dev/null <<EOF
-[Unit]
-Description=OMNIBOT v2.6 Sentinel Trading Bot
-After=network.target
+    # Create global command symlink
+    mkdir -p "$HOME/.local/bin"
+    ln -sf "$(pwd)/scripts/omnibot.sh" "$HOME/.local/bin/omnibot" 2>/dev/null || true
+}
 
-[Service]
-Type=simple
-User=$USER
-WorkingDirectory=$(pwd)
-Environment=PATH=$(pwd)/venv/bin
-Environment=PYTHONPATH=$(pwd)
-ExecStart=$(pwd)/venv/bin/python $(pwd)/src/main.py --mode trading
-Restart=always
-RestartSec=10
+# Main setup
+main() {
+    echo ""
+    echo -e "${GREEN}"
+    echo "╔══════════════════════════════════════════════════════════╗"
+    echo "║   🤖  OMNIBOT v2.6 Sentinel - Setup                    ║"
+    echo "╚══════════════════════════════════════════════════════════╝"
+    echo -e "${NC}"
 
-[Install]
-WantedBy=multi-user.target
-EOF
+    check_python
+    setup_venv
+    install_deps
+    setup_dirs
+    setup_scripts
 
-# Create ngrok service (optional)
-sudo tee /etc/systemd/system/omnibot-dashboard.service > /dev/null <<EOF
-[Unit]
-Description=OMNIBOT v2.6 Sentinel Dashboard
-After=network.target
+    echo ""
+    echo -e "${GREEN}"
+    echo "╔══════════════════════════════════════════════════════════╗"
+    echo "║   ✅  Setup Complete!                                    ║"
+    echo "╚══════════════════════════════════════════════════════════╝"
+    echo -e "${NC}"
+    echo ""
+    log "To start OMNIBOT:"
+    echo "  ./scripts/omnibot.sh start --ngrok"
+    echo ""
+    log "Or activate venv manually:"
+    echo "  source venv/bin/activate"
+    echo "  python src/main.py --mode dashboard --ngrok"
+}
 
-[Service]
-Type=simple
-User=$USER
-WorkingDirectory=$(pwd)
-Environment=PATH=$(pwd)/venv/bin
-Environment=PYTHONPATH=$(pwd)
-ExecStart=$(pwd)/venv/bin/python $(pwd)/src/main.py --mode dashboard
-Restart=always
-RestartSec=10
-
-[Install]
-WantedBy=multi-user.target
-EOF
-
-echo ""
-echo "✅ Setup complete!"
-echo ""
-echo "🚀 Next steps:"
-echo "   1. Configure API keys:  python src/main.py --setup"
-echo "   2. Test trading:        python src/main.py --mode trading"
-echo "   3. Start dashboard:     python src/main.py --mode dashboard"
-echo "   4. Enable auto-start:   sudo systemctl enable omnibot"
-echo "   5. Start service:       sudo systemctl start omnibot"
-echo ""
-echo "📖 Documentation:"
-echo "   - Dashboard: http://$(hostname -I | awk '{print $1}'):8080"
-echo "   - Logs:      tail -f data/logs/omnibot.log"
-echo ""
+main "$@"

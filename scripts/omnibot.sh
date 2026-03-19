@@ -1,108 +1,182 @@
 #!/bin/bash
 # OMNIBOT v2.6 Sentinel - Helper Script
-# This script keeps the terminal alive for ngrok/external access
+# Keeps terminal alive for ngrok/external access
 
-OMNIBOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-cd "$OMNIBOT_DIR"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
+VENV_DIR="$PROJECT_DIR/venv"
+LOG_DIR="$PROJECT_DIR/data/logs"
+PIDFILE="$PROJECT_DIR/.omnibot.pid"
 
-# Activate virtual environment
-source venv/bin/activate
+# Colors
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m' # No Color
 
-# Set Python path
-export PYTHONPATH="${PYTHONPATH}:$OMNIBOT_DIR"
+log() {
+    echo -e "${GREEN}[$(date +'%Y-%m-%d %H:%M:%S')] $1${NC}"
+}
 
-# Function to keep terminal alive
+warn() {
+    echo -e "${YELLOW}[$(date +'%Y-%m-%d %H:%M:%S')] WARNING: $1${NC}"
+}
+
+error() {
+    echo -e "${RED}[$(date +'%Y-%m-%d %H:%M:%S')] ERROR: $1${NC}"
+}
+
+check_venv() {
+    if [ ! -d "$VENV_DIR" ]; then
+        error "Virtual environment not found. Run setup.sh first."
+        exit 1
+    fi
+    source "$VENV_DIR/bin/activate"
+}
+
+start_dashboard() {
+    check_venv
+
+    if [ -f "$PIDFILE" ]; then
+        PID=$(cat "$PIDFILE")
+        if ps -p "$PID" > /dev/null 2>&1; then
+            warn "OMNIBOT is already running (PID: $PID)"
+            return 1
+        else
+            rm -f "$PIDFILE"
+        fi
+    fi
+
+    log "Starting OMNIBOT Dashboard..."
+
+    NGROK_FLAG=""
+    if [ "$1" == "--ngrok" ]; then
+        NGROK_FLAG="--ngrok"
+        log "ngrok tunnel enabled"
+    fi
+
+    # Use tmux to keep alive
+    tmux kill-session -t omnibot 2>/dev/null || true
+    tmux new-session -d -s omnibot "cd '$PROJECT_DIR' && python src/main.py --mode dashboard $NGROK_FLAG 2>&1 | tee -a '$LOG_DIR/dashboard.log'"
+
+    sleep 3
+
+    # Get tmux PID
+    TMUX_PID=$(tmux list-panes -t omnibot -F '#{pane_pid}' 2>/dev/null | head -1)
+    if [ -n "$TMUX_PID" ]; then
+        echo "$TMUX_PID" > "$PIDFILE"
+        log "Dashboard started in tmux session 'omnibot'"
+        log "Local: http://localhost:8081"
+
+        if [ -n "$NGROK_FLAG" ]; then
+            sleep 2
+            NGROK_URL=$(curl -s http://localhost:4040/api/tunnels 2>/dev/null | grep -o '"public_url":"[^"]*"' | head -1 | cut -d'"' -f4)
+            if [ -n "$NGROK_URL" ]; then
+                log "External: $NGROK_URL"
+            fi
+        fi
+
+        log "To view: tmux attach -t omnibot"
+        log "To stop: $0 stop"
+        return 0
+    else
+        error "Failed to start dashboard"
+        return 1
+    fi
+}
+
+stop_dashboard() {
+    log "Stopping OMNIBOT..."
+
+    tmux kill-session -t omnibot 2>/dev/null || true
+    pkill -9 -f "python src/main.py" 2>/dev/null || true
+    pkill -9 -f ngrok 2>/dev/null || true
+
+    rm -f "$PIDFILE"
+
+    log "OMNIBOT stopped"
+}
+
+status() {
+    if tmux has-session -t omnibot 2>/dev/null; then
+        log "OMNIBOT is RUNNING in tmux session 'omnibot'"
+
+        # Check ngrok
+        NGROK_URL=$(curl -s http://localhost:4040/api/tunnels 2>/dev/null | grep -o '"public_url":"[^"]*"' | head -1 | cut -d'"' -f4)
+        if [ -n "$NGROK_URL" ]; then
+            log "External URL: $NGROK_URL"
+        fi
+
+        log "Local URL: http://localhost:8081"
+        return 0
+    else
+        warn "OMNIBOT is NOT running"
+        return 1
+    fi
+}
+
 keep_alive() {
-    echo "Keeping terminal alive for ngrok..."
+    log "Keep-alive monitor started..."
     while true; do
-        sleep 60
-        # Ping ngrok API to keep connection alive
-        curl -s http://localhost:4040/api/tunnels > /dev/null 2>&1 || true
+        if ! tmux has-session -t omnibot 2>/dev/null; then
+            warn "OMNIBOT session lost, restarting..."
+            start_dashboard "$1"
+        fi
+
+        # Check ngrok if enabled
+        if [ "$1" == "--ngrok" ]; then
+            if ! curl -s http://localhost:4040/api/tunnels > /dev/null 2>&1; then
+                warn "ngrok tunnel down, restarting..."
+                stop_dashboard
+                sleep 2
+                start_dashboard "$1"
+            fi
+        fi
+
+        sleep 30
     done
 }
 
-# Parse arguments
-MODE="${1:-trading}"
-ENABLE_NGROK="${2:-false}"
-
-case "$MODE" in
-    trading)
-        echo "🤖 Starting OMNIBOT Trading Engine..."
-        python src/main.py --mode trading &
-        TRADING_PID=$!
-
-        # Keep terminal alive
-        keep_alive &
-        ALIVE_PID=$!
-
-        # Wait for trading process
-        wait $TRADING_PID
-        kill $ALIVE_PID 2>/dev/null
+case "${1:-}" in
+    start)
+        start_dashboard "${2:-}"
         ;;
-
-    dashboard)
-        echo "🌐 Starting OMNIBOT Dashboard..."
-
-        if [ "$ENABLE_NGROK" = "--ngrok" ] || [ "$ENABLE_NGROK" = "true" ]; then
-            echo "   External access enabled (ngrok)"
-            python src/main.py --mode dashboard --ngrok &
-        else
-            python src/main.py --mode dashboard &
-        fi
-
-        DASHBOARD_PID=$!
-
-        # Keep terminal alive
-        keep_alive &
-        ALIVE_PID=$!
-
-        # Wait for dashboard process
-        wait $DASHBOARD_PID
-        kill $ALIVE_PID 2>/dev/null
-        ;;
-
-    setup)
-        echo "🔧 Running OMNIBOT Setup..."
-        python src/main.py --setup
-        ;;
-
-    status)
-        echo "📊 OMNIBOT Status"
-        echo "================="
-
-        # Check if processes are running
-        if pgrep -f "omnibot" > /dev/null; then
-            echo "✅ OMNIBOT is running"
-            pgrep -f "omnibot" | xargs ps -fp
-        else
-            echo "❌ OMNIBOT is not running"
-        fi
-
-        # Check ngrok
-        if pgrep -f "ngrok" > /dev/null; then
-            echo ""
-            echo "✅ ngrok is running"
-            curl -s http://localhost:4040/api/tunnels | grep -o '"public_url":"[^"]*"' | head -1
-        fi
-        ;;
-
     stop)
-        echo "🛑 Stopping OMNIBOT..."
-        pkill -f "omnibot"
-        pkill -f "ngrok"
-        echo "✅ Stopped"
+        stop_dashboard
         ;;
-
+    restart)
+        stop_dashboard
+        sleep 2
+        start_dashboard "${2:-}"
+        ;;
+    status)
+        status
+        ;;
+    keep-alive)
+        keep_alive "${2:-}"
+        ;;
+    attach)
+        tmux attach -t omnibot
+        ;;
     *)
-        echo "Usage: $0 {trading|dashboard|setup|status|stop} [--ngrok]"
+        echo "OMNIBOT v2.6 Sentinel - Helper Script"
+        echo ""
+        echo "Usage: $0 {start|stop|restart|status|attach|keep-alive} [--ngrok]"
         echo ""
         echo "Commands:"
-        echo "  trading           Start trading engine"
-        echo "  dashboard         Start dashboard"
-        echo "  dashboard --ngrok Start dashboard with external access"
-        echo "  setup             Run setup wizard"
-        echo "  status            Check status"
-        echo "  stop              Stop all OMNIBOT processes"
+        echo "  start       - Start dashboard in tmux (detached)"
+        echo "  stop        - Stop dashboard and ngrok"
+        echo "  restart     - Restart dashboard"
+        echo "  status      - Check if running"
+        echo "  attach      - Attach to tmux session"
+        echo "  keep-alive  - Monitor and auto-restart if needed"
+        echo ""
+        echo "Options:"
+        echo "  --ngrok     - Enable external access via ngrok"
+        echo ""
+        echo "Examples:"
+        echo "  $0 start --ngrok    # Start with external access"
+        echo "  $0 keep-alive       # Auto-restart on crash"
         exit 1
         ;;
 esac

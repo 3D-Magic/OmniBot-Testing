@@ -1,275 +1,291 @@
 """
-OMNIBOT v2.6 Sentinel - Strategy Engine
-Multi-strategy coordination and signal generation
+OMNIBOT Strategies Engine
+Manages multiple trading strategies
 """
 
 import logging
-import threading
-import time
-from typing import Dict, List
-from collections import defaultdict
+import numpy as np
+import pandas as pd
+from typing import Dict, List, Optional, Any
+from datetime import datetime
 
-from config.settings import STRATEGIES, WATCHLIST
-from src.core.data_fetcher import DataFetcher
+from config.settings import STRATEGIES
 
 logger = logging.getLogger(__name__)
 
 
-class StrategyEngine:
-    """Manages multiple trading strategies"""
+class Strategy:
+    """Base strategy class"""
+
+    def __init__(self, name: str, weight: float = 1.0):
+        self.name = name
+        self.weight = weight
+        self.enabled = True
+        self.signals: List[Dict] = []
+
+    def generate_signal(self, data: pd.DataFrame) -> Optional[str]:
+        """Generate trading signal - override in subclass"""
+        return None
+
+    def get_confidence(self) -> float:
+        """Get strategy confidence score"""
+        return 0.5
+
+
+class MomentumStrategy(Strategy):
+    """Momentum-based strategy"""
+
+    def __init__(self, lookback: int = 20):
+        super().__init__("momentum", 0.25)
+        self.lookback = lookback
+
+    def generate_signal(self, data: pd.DataFrame) -> Optional[str]:
+        if len(data) < self.lookback:
+            return None
+
+        # Calculate momentum
+        current_price = data['Close'].iloc[-1]
+        past_price = data['Close'].iloc[-self.lookback]
+        momentum = (current_price - past_price) / past_price * 100
+
+        if momentum > 5:
+            return "buy"
+        elif momentum < -5:
+            return "sell"
+
+        return None
+
+    def get_confidence(self) -> float:
+        return 0.7
+
+
+class MeanReversionStrategy(Strategy):
+    """Mean reversion strategy"""
+
+    def __init__(self, z_threshold: float = 2.0):
+        super().__init__("mean_reversion", 0.25)
+        self.z_threshold = z_threshold
+
+    def generate_signal(self, data: pd.DataFrame) -> Optional[str]:
+        if len(data) < 20:
+            return None
+
+        # Calculate z-score
+        mean = data['Close'].mean()
+        std = data['Close'].std()
+        current = data['Close'].iloc[-1]
+        z_score = (current - mean) / std if std != 0 else 0
+
+        if z_score < -self.z_threshold:
+            return "buy"  # Oversold
+        elif z_score > self.z_threshold:
+            return "sell"  # Overbought
+
+        return None
+
+    def get_confidence(self) -> float:
+        return 0.6
+
+
+class BreakoutStrategy(Strategy):
+    """Breakout strategy"""
+
+    def __init__(self, atr_period: int = 14):
+        super().__init__("breakout", 0.25)
+        self.atr_period = atr_period
+
+    def generate_signal(self, data: pd.DataFrame) -> Optional[str]:
+        if len(data) < self.atr_period + 5:
+            return None
+
+        # Calculate ATR
+        high_low = data['High'] - data['Low']
+        high_close = np.abs(data['High'] - data['Close'].shift())
+        low_close = np.abs(data['Low'] - data['Close'].shift())
+        ranges = pd.concat([high_low, high_close, low_close], axis=1)
+        true_range = np.max(ranges, axis=1)
+        atr = true_range.rolling(self.atr_period).mean().iloc[-1]
+
+        current_price = data['Close'].iloc[-1]
+        prev_high = data['High'].iloc[-5:-1].max()
+        prev_low = data['Low'].iloc[-5:-1].min()
+
+        if current_price > prev_high + atr * 0.5:
+            return "buy"
+        elif current_price < prev_low - atr * 0.5:
+            return "sell"
+
+        return None
+
+    def get_confidence(self) -> float:
+        return 0.65
+
+
+class MLEnsembleStrategy(Strategy):
+    """Machine Learning ensemble strategy using scikit-learn"""
 
     def __init__(self):
-        self.config = STRATEGIES
-        self.data_fetcher = DataFetcher()
-        self.running = False
-        self.signals = []
-        self.thread = None
+        super().__init__("ml_ensemble", 0.25)
+        self.model = None
+        self.is_trained = False
 
-        # Initialize strategies
-        self.strategies = {}
+    def _prepare_features(self, data: pd.DataFrame) -> np.ndarray:
+        """Prepare features for ML model"""
+        features = []
+
+        # Technical indicators
+        data['SMA_20'] = data['Close'].rolling(20).mean()
+        data['SMA_50'] = data['Close'].rolling(50).mean()
+        data['RSI'] = self._calculate_rsi(data['Close'], 14)
+        data['MACD'] = self._calculate_macd(data['Close'])
+
+        # Feature vector
+        latest = data.iloc[-1]
+        features = [
+            latest['Close'] / latest['SMA_20'] - 1 if latest['SMA_20'] != 0 else 0,
+            latest['Close'] / latest['SMA_50'] - 1 if latest['SMA_50'] != 0 else 0,
+            latest['RSI'] / 100,
+            latest['MACD'],
+            data['Volume'].iloc[-1] / data['Volume'].rolling(20).mean().iloc[-1] if data['Volume'].rolling(20).mean().iloc[-1] != 0 else 1
+        ]
+
+        return np.array(features).reshape(1, -1)
+
+    def _calculate_rsi(self, prices: pd.Series, period: int = 14) -> pd.Series:
+        """Calculate RSI"""
+        delta = prices.diff()
+        gain = (delta.where(delta > 0, 0)).rolling(window=period).mean()
+        loss = (-delta.where(delta < 0, 0)).rolling(window=period).mean()
+        rs = gain / loss
+        rsi = 100 - (100 / (1 + rs))
+        return rsi
+
+    def _calculate_macd(self, prices: pd.Series) -> float:
+        """Calculate MACD"""
+        ema_12 = prices.ewm(span=12).mean().iloc[-1]
+        ema_26 = prices.ewm(span=26).mean().iloc[-1]
+        return ema_12 - ema_26
+
+    def generate_signal(self, data: pd.DataFrame) -> Optional[str]:
+        if len(data) < 50:
+            return None
+
+        try:
+            from sklearn.ensemble import RandomForestClassifier
+
+            # Simple rule-based for now (can be trained)
+            features = self._prepare_features(data)
+
+            # Trend following logic
+            sma_20 = data['Close'].rolling(20).mean().iloc[-1]
+            sma_50 = data['Close'].rolling(50).mean().iloc[-1]
+
+            if sma_20 > sma_50 * 1.02:
+                return "buy"
+            elif sma_20 < sma_50 * 0.98:
+                return "sell"
+
+        except ImportError:
+            logger.warning("scikit-learn not available, using fallback")
+            return None
+
+        return None
+
+    def get_confidence(self) -> float:
+        return 0.75 if self.is_trained else 0.5
+
+
+class StrategiesEngine:
+    """Manages all trading strategies"""
+
+    def __init__(self):
+        self.strategies: Dict[str, Strategy] = {}
         self._init_strategies()
-
-        logger.info("Strategy Engine initialized")
+        logger.info("StrategiesEngine initialized")
 
     def _init_strategies(self):
-        """Initialize enabled strategies"""
-        if self.config.get("momentum", {}).get("enabled", False):
-            self.strategies["momentum"] = MomentumStrategy(self.config["momentum"])
+        """Initialize all strategies from config"""
+        config = STRATEGIES
 
-        if self.config.get("mean_reversion", {}).get("enabled", False):
-            self.strategies["mean_reversion"] = MeanReversionStrategy(self.config["mean_reversion"])
+        if config.get('momentum', {}).get('enabled', True):
+            self.strategies['momentum'] = MomentumStrategy(
+                lookback=config['momentum'].get('lookback', 20)
+            )
 
-        if self.config.get("breakout", {}).get("enabled", False):
-            self.strategies["breakout"] = BreakoutStrategy(self.config["breakout"])
+        if config.get('mean_reversion', {}).get('enabled', True):
+            self.strategies['mean_reversion'] = MeanReversionStrategy(
+                z_threshold=config['mean_reversion'].get('z_threshold', 2.0)
+            )
 
-        if self.config.get("ml_ensemble", {}).get("enabled", False):
-            self.strategies["ml_ensemble"] = MLEnsembleStrategy(self.config["ml_ensemble"])
+        if config.get('breakout', {}).get('enabled', True):
+            self.strategies['breakout'] = BreakoutStrategy(
+                atr_period=config['breakout'].get('atr_period', 14)
+            )
 
-        logger.info(f"Initialized {len(self.strategies)} strategies")
+        if config.get('ml_ensemble', {}).get('enabled', True):
+            self.strategies['ml_ensemble'] = MLEnsembleStrategy()
 
-    def start(self):
-        """Start strategy engine"""
-        self.running = True
-        self.thread = threading.Thread(target=self._strategy_loop, daemon=True)
-        self.thread.start()
-        logger.info("Strategy engine started")
+    def generate_consensus(self, data: pd.DataFrame) -> Dict[str, Any]:
+        """Generate consensus signal from all strategies"""
+        signals = {}
+        total_weight = 0
+        weighted_score = 0
 
-    def stop(self):
-        """Stop strategy engine"""
-        self.running = False
-        if self.thread:
-            self.thread.join(timeout=5)
-        logger.info("Strategy engine stopped")
+        for name, strategy in self.strategies.items():
+            if not strategy.enabled:
+                continue
 
-    def _strategy_loop(self):
-        """Main strategy loop"""
-        while self.running:
-            try:
-                self.generate_signals()
-                time.sleep(60)  # Check every minute
-            except Exception as e:
-                logger.error(f"Strategy loop error: {e}")
-                time.sleep(60)
+            signal = strategy.generate_signal(data)
+            weight = strategy.weight
+            confidence = strategy.get_confidence()
 
-    def generate_signals(self) -> List[Dict]:
-        """Generate trading signals from all strategies"""
-        all_signals = []
+            signals[name] = {
+                'signal': signal,
+                'weight': weight,
+                'confidence': confidence
+            }
 
-        for symbol in WATCHLIST:
-            try:
-                # Get data
-                data = self.data_fetcher.get_historical_data(symbol, period="5d", interval="5m")
+            # Calculate weighted score
+            if signal == "buy":
+                weighted_score += weight * confidence
+            elif signal == "sell":
+                weighted_score -= weight * confidence
 
-                if data.empty:
-                    continue
+            total_weight += weight
 
-                # Get signals from each strategy
-                for name, strategy in self.strategies.items():
-                    signal = strategy.generate_signal(symbol, data)
-                    if signal and signal.get("action") != "hold":
-                        all_signals.append(signal)
+        # Normalize
+        if total_weight > 0:
+            consensus_score = weighted_score / total_weight
+        else:
+            consensus_score = 0
 
-            except Exception as e:
-                logger.error(f"Error generating signals for {symbol}: {e}")
+        # Determine action
+        if consensus_score > 0.3:
+            consensus = "buy"
+        elif consensus_score < -0.3:
+            consensus = "sell"
+        else:
+            consensus = "hold"
 
-        self.signals = all_signals
-        return all_signals
+        return {
+            'consensus': consensus,
+            'score': consensus_score,
+            'individual_signals': signals,
+            'timestamp': datetime.now().isoformat()
+        }
 
-    def get_strategy_status(self) -> Dict:
+    def get_strategy_status(self) -> Dict[str, Any]:
         """Get status of all strategies"""
         return {
             name: {
-                "enabled": True,
-                "weight": self.config.get(name, {}).get("weight", 0.25)
+                'enabled': s.enabled,
+                'weight': s.weight,
+                'confidence': s.get_confidence()
             }
-            for name in self.strategies.keys()
+            for name, s in self.strategies.items()
         }
 
 
-class MomentumStrategy:
-    """Momentum-based strategy"""
-
-    def __init__(self, config):
-        self.config = config
-        self.lookback = config.get("params", {}).get("lookback", 20)
-        self.threshold = config.get("params", {}).get("threshold", 0.05)
-
-    def generate_signal(self, symbol: str, data) -> Dict:
-        """Generate momentum signal"""
-        if len(data) < self.lookback:
-            return {"symbol": symbol, "action": "hold", "confidence": 0}
-
-        # Calculate momentum
-        current_price = data["Close"].iloc[-1]
-        past_price = data["Close"].iloc[-self.lookback]
-        momentum = (current_price - past_price) / past_price
-
-        # Generate signal
-        if momentum > self.threshold:
-            return {
-                "symbol": symbol,
-                "action": "buy",
-                "confidence": min(abs(momentum) * 10, 1.0),
-                "strategy": "momentum",
-                "metadata": {"momentum": momentum}
-            }
-        elif momentum < -self.threshold:
-            return {
-                "symbol": symbol,
-                "action": "sell",
-                "confidence": min(abs(momentum) * 10, 1.0),
-                "strategy": "momentum",
-                "metadata": {"momentum": momentum}
-            }
-
-        return {"symbol": symbol, "action": "hold", "confidence": 0}
-
-
-class MeanReversionStrategy:
-    """Mean reversion strategy"""
-
-    def __init__(self, config):
-        self.config = config
-        self.lookback = config.get("params", {}).get("lookback", 20)
-        self.z_threshold = config.get("params", {}).get("z_score_threshold", 2.0)
-
-    def generate_signal(self, symbol: str, data) -> Dict:
-        """Generate mean reversion signal"""
-        if len(data) < self.lookback:
-            return {"symbol": symbol, "action": "hold", "confidence": 0}
-
-        # Calculate z-score
-        prices = data["Close"]
-        mean = prices.rolling(window=self.lookback).mean().iloc[-1]
-        std = prices.rolling(window=self.lookback).std().iloc[-1]
-        current_price = prices.iloc[-1]
-
-        if std == 0:
-            return {"symbol": symbol, "action": "hold", "confidence": 0}
-
-        z_score = (current_price - mean) / std
-
-        # Generate signal (buy when oversold, sell when overbought)
-        if z_score < -self.z_threshold:
-            return {
-                "symbol": symbol,
-                "action": "buy",
-                "confidence": min(abs(z_score) / 4, 1.0),
-                "strategy": "mean_reversion",
-                "metadata": {"z_score": z_score}
-            }
-        elif z_score > self.z_threshold:
-            return {
-                "symbol": symbol,
-                "action": "sell",
-                "confidence": min(abs(z_score) / 4, 1.0),
-                "strategy": "mean_reversion",
-                "metadata": {"z_score": z_score}
-            }
-
-        return {"symbol": symbol, "action": "hold", "confidence": 0}
-
-
-class BreakoutStrategy:
-    """Breakout strategy"""
-
-    def __init__(self, config):
-        self.config = config
-        self.atr_period = config.get("params", {}).get("atr_period", 14)
-        self.breakout_factor = config.get("params", {}).get("breakout_factor", 1.5)
-
-    def generate_signal(self, symbol: str, data) -> Dict:
-        """Generate breakout signal"""
-        if len(data) < self.atr_period + 5:
-            return {"symbol": symbol, "action": "hold", "confidence": 0}
-
-        # Calculate ATR
-        high_low = data["High"] - data["Low"]
-        high_close = abs(data["High"] - data["Close"].shift())
-        low_close = abs(data["Low"] - data["Close"].shift())
-        ranges = pd.concat([high_low, high_close, low_close], axis=1)
-        true_range = ranges.max(axis=1)
-        atr = true_range.rolling(window=self.atr_period).mean().iloc[-1]
-
-        # Get price levels
-        current_price = data["Close"].iloc[-1]
-        prev_high = data["High"].iloc[-5:-1].max()
-        prev_low = data["Low"].iloc[-5:-1].min()
-
-        # Breakout detection
-        if current_price > prev_high + atr * self.breakout_factor:
-            return {
-                "symbol": symbol,
-                "action": "buy",
-                "confidence": 0.7,
-                "strategy": "breakout",
-                "metadata": {"breakout_type": "up"}
-            }
-        elif current_price < prev_low - atr * self.breakout_factor:
-            return {
-                "symbol": symbol,
-                "action": "sell",
-                "confidence": 0.7,
-                "strategy": "breakout",
-                "metadata": {"breakout_type": "down"}
-            }
-
-        return {"symbol": symbol, "action": "hold", "confidence": 0}
-
-
-class MLEnsembleStrategy:
-    """Machine Learning ensemble strategy"""
-
-    def __init__(self, config):
-        self.config = config
-        self.sequence_length = config.get("params", {}).get("sequence_length", 60)
-        self.confidence_threshold = config.get("params", {}).get("confidence_threshold", 0.6)
-
-    def generate_signal(self, symbol: str, data) -> Dict:
-        """Generate ML-based signal (simplified)"""
-        if len(data) < self.sequence_length:
-            return {"symbol": symbol, "action": "hold", "confidence": 0}
-
-        # Simplified ML signal based on trend and volume
-        prices = data["Close"]
-        volumes = data["Volume"]
-
-        # Calculate features
-        returns = prices.pct_change().iloc[-10:].mean()
-        volume_trend = volumes.iloc[-5:].mean() / volumes.iloc[-20:].mean() - 1
-
-        # Simple ensemble logic
-        score = returns * 10 + volume_trend * 5
-        confidence = min(abs(score), 1.0)
-
-        if confidence > self.confidence_threshold:
-            action = "buy" if score > 0 else "sell"
-            return {
-                "symbol": symbol,
-                "action": action,
-                "confidence": confidence,
-                "strategy": "ml_ensemble",
-                "metadata": {"score": score}
-            }
-
-        return {"symbol": symbol, "action": "hold", "confidence": 0}
+def create_strategies_engine() -> StrategiesEngine:
+    """Factory function"""
+    return StrategiesEngine()

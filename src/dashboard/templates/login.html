@@ -3,137 +3,91 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OMNIBOT Login</title>
+    <title>OMNIBOT - Login</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
             min-height: 100vh;
             display: flex;
-            justify-content: center;
             align-items: center;
+            justify-content: center;
         }
-
-        .login-container {
-            background: rgba(255, 255, 255, 0.1);
+        .login-box {
+            background: rgba(255,255,255,0.1);
             backdrop-filter: blur(10px);
-            padding: 3rem;
+            border: 1px solid rgba(255,255,255,0.2);
             border-radius: 20px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            width: 100%;
+            padding: 40px;
+            width: 90%;
             max-width: 400px;
             text-align: center;
         }
-
-        .logo {
-            font-size: 3rem;
-            margin-bottom: 0.5rem;
-        }
-
         h1 {
-            color: white;
-            margin-bottom: 0.5rem;
-            font-size: 2rem;
+            color: #fff;
+            margin-bottom: 10px;
+            font-size: 2em;
         }
-
         .subtitle {
-            color: rgba(255, 255, 255, 0.7);
-            margin-bottom: 2rem;
+            color: rgba(255,255,255,0.7);
+            margin-bottom: 30px;
         }
-
-        .form-group {
-            margin-bottom: 1.5rem;
-            text-align: left;
-        }
-
-        label {
-            display: block;
-            color: rgba(255, 255, 255, 0.8);
-            margin-bottom: 0.5rem;
-            font-size: 0.9rem;
-        }
-
         input[type="password"] {
             width: 100%;
-            padding: 1rem;
+            padding: 15px;
             border: none;
             border-radius: 10px;
-            background: rgba(255, 255, 255, 0.1);
-            color: white;
-            font-size: 1rem;
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(0,0,0,0.3);
+            color: #fff;
+            font-size: 1em;
+            margin-bottom: 20px;
         }
-
         input[type="password"]::placeholder {
-            color: rgba(255, 255, 255, 0.4);
+            color: rgba(255,255,255,0.5);
         }
-
-        input[type="password"]:focus {
-            outline: none;
-            border-color: #00f260;
-            background: rgba(255, 255, 255, 0.15);
-        }
-
         button {
             width: 100%;
-            padding: 1rem;
+            padding: 15px;
             border: none;
             border-radius: 10px;
-            background: linear-gradient(45deg, #00f260, #0575e6);
-            color: white;
-            font-size: 1rem;
+            background: #00d26a;
+            color: #000;
+            font-size: 1em;
             font-weight: bold;
             cursor: pointer;
-            transition: transform 0.3s ease;
+            transition: all 0.3s;
         }
-
         button:hover {
+            background: #00ff7f;
             transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(0, 242, 96, 0.3);
         }
-
         .error {
-            background: rgba(255, 65, 108, 0.2);
-            color: #ff416c;
-            padding: 1rem;
-            border-radius: 10px;
-            margin-bottom: 1rem;
-            border: 1px solid rgba(255, 65, 108, 0.3);
+            color: #ff4757;
+            margin-bottom: 15px;
         }
-
-        .version {
-            margin-top: 2rem;
-            color: rgba(255, 255, 255, 0.5);
-            font-size: 0.8rem;
+        .hint {
+            color: rgba(255,255,255,0.5);
+            font-size: 0.8em;
+            margin-top: 20px;
         }
     </style>
 </head>
 <body>
-    <div class="login-container">
-        <div class="logo">🤖</div>
-        <h1>OMNIBOT</h1>
-        <p class="subtitle">v2.6 Sentinel - Secure Login</p>
+    <div class="login-box">
+        <h1>🤖 OMNIBOT</h1>
+        <div class="subtitle">v2.6 Sentinel</div>
 
         {% if error %}
         <div class="error">{{ error }}</div>
         {% endif %}
 
         <form method="POST">
-            <div class="form-group">
-                <label for="password">Password</label>
-                <input type="password" id="password" name="password" placeholder="Enter password" required autofocus>
-            </div>
+            <input type="password" name="password" placeholder="Enter password" autofocus>
             <button type="submit">Login</button>
         </form>
 
-        <p class="version">OMNIBOT v2.6.0 Sentinel</p>
+        <div class="hint">Default password: admin</div>
     </div>
 </body>
 </html>

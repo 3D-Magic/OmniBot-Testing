@@ -1,1 +1,0 @@
-# OMNIBOT v2.6 Sentinel
