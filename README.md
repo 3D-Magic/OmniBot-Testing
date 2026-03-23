@@ -1,4 +1,4 @@
-# 🤖 OmniBot v2.6 Sentinel Enhanced
+# 🤖 OmniBot v2.6.1 Sentinel Enhanced
 
 **ML-Enhanced Automated Trading System with Aggressive Trading Modes & Auto-Updates**
 
