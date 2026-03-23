@@ -1,8 +1,49 @@
-# 🤖 OmniBot v2.6.1 Sentinel Enhanced
+# 🤖 OmniBot v2.6 Sentinel Enhanced
 
 **ML-Enhanced Automated Trading System with Aggressive Trading Modes & Auto-Updates**
 
 Optimized for Raspberry Pi • Zero Cost • Open Source
+
+---
+
+## 🚀 Quick Start
+
+### Option 1: Clone from GitHub (Recommended)
+```bash
+# Clone the repository
+git clone https://github.com/3D-Magic/OmniBot-Testing.git OmniBot-v2.6
+cd OmniBot-v2.6
+
+# Run setup
+chmod +x setup.sh
+./setup.sh
+
+# Start with aggressive mode
+./scripts/omnibot.sh start --ngrok
+```
+
+### Option 2: Download and Extract
+```bash
+# Download latest release
+wget https://github.com/3D-Magic/OmniBot-Testing/archive/refs/heads/main.zip -O omnibot-v2.6.zip
+unzip omnibot-v2.6.zip
+mv OmniBot-Testing-main OmniBot-v2.6
+cd OmniBot-v2.6
+
+# Run setup
+chmod +x setup.sh
+./setup.sh
+
+# Start with aggressive mode
+./scripts/omnibot.sh start --ngrok
+```
+
+### Option 3: Update Existing Installation
+```bash
+cd ~/OmniBot-v2.6
+git pull origin main
+./scripts/omnibot.sh restart --ngrok
+```
 
 ---
 
@@ -14,7 +55,7 @@ Optimized for Raspberry Pi • Zero Cost • Open Source
 | **Conservative** | 75%+ | 2% | Low | Capital preservation |
 | **Moderate** | 65%+ | 5% | Medium | Balanced growth |
 | **Aggressive** | 55%+ | 10% | **High** | **Active trading** |
-| **HFT Scalper** | 48%+ | 5% | Very High | Short-term scalping |
+| **HFT Scalper** | 48%+ | 5% | Very High | **Scalping** |
 | **Sentinel** | N/A | N/A | None | Monitor-only |
 
 ### 🔄 Auto-Update System
@@ -22,19 +63,6 @@ Optimized for Raspberry Pi • Zero Cost • Open Source
 - ✅ **Automatic**: Checks every 24 hours
 - ✅ **Weekend Updates**: Applies when market closed (no manual steps)
 - ✅ **Safe Restart**: Preserves config, auto-restarts dashboard
-
----
-
-## 🚀 Quick Start
-
-```bash
-# Install
-chmod +x setup.sh
-./setup.sh
-
-# Start with aggressive mode
-./scripts/omnibot.sh start --ngrok
-```
 
 ---
 
@@ -52,4 +80,4 @@ chmod +x setup.sh
 
 ## 📜 License
 
-Personal Use License - Open Source
+MIT License - Open Source
