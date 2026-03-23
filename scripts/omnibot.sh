@@ -1,182 +1,105 @@
 #!/bin/bash
-# OMNIBOT v2.6 Sentinel - Helper Script
-# Keeps terminal alive for ngrok/external access
+# OmniBot v2.6 Sentinel - Control Script
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
-VENV_DIR="$PROJECT_DIR/venv"
-LOG_DIR="$PROJECT_DIR/data/logs"
-PIDFILE="$PROJECT_DIR/.omnibot.pid"
+BOT_DIR="$HOME/OmniBot-v2.6"
+PID_FILE="/tmp/omnibot.pid"
+TMUX_SESSION="omnibot"
 
-# Colors
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-NC='\033[0m' # No Color
+start_bot() {
+    echo "🤖 Starting OmniBot v2.6 Sentinel..."
 
-log() {
-    echo -e "${GREEN}[$(date +'%Y-%m-%d %H:%M:%S')] $1${NC}"
-}
+    cd "$BOT_DIR"
 
-warn() {
-    echo -e "${YELLOW}[$(date +'%Y-%m-%d %H:%M:%S')] WARNING: $1${NC}"
-}
-
-error() {
-    echo -e "${RED}[$(date +'%Y-%m-%d %H:%M:%S')] ERROR: $1${NC}"
-}
-
-check_venv() {
-    if [ ! -d "$VENV_DIR" ]; then
-        error "Virtual environment not found. Run setup.sh first."
+    if [ -f "$PID_FILE" ] && kill -0 $(cat "$PID_FILE") 2>/dev/null; then
+        echo "⚠️  OmniBot is already running!"
         exit 1
     fi
-    source "$VENV_DIR/bin/activate"
+
+    tmux new-session -d -s "$TMUX_SESSION" -n "bot"
+
+    if [[ "$1" == "--ngrok" ]]; then
+        tmux send-keys -t "$TMUX_SESSION:bot" "cd $BOT_DIR && python src/main.py --ngrok" C-m
+        sleep 3
+        tmux split-window -h -t "$TMUX_SESSION"
+        tmux send-keys -t "$TMUX_SESSION:bot" "ngrok http 8081" C-m
+    else
+        tmux send-keys -t "$TMUX_SESSION:bot" "cd $BOT_DIR && python src/main.py" C-m
+    fi
+
+    echo $! > "$PID_FILE"
+
+    echo "✅ OmniBot started!"
+    echo "📊 Dashboard: http://localhost:8081"
+
+    if [[ "$1" == "--ngrok" ]]; then
+        sleep 2
+        echo "🌐 Fetching ngrok URL..."
+        curl -s http://localhost:4040/api/tunnels | grep -o '"public_url":"[^"]*' | cut -d'"' -f4
+    fi
+
+    echo ""
+    echo "Commands:"
+    echo "  View logs:  tmux attach -t omnibot"
+    echo "  Stop:       ./scripts/omnibot.sh stop"
 }
 
-start_dashboard() {
-    check_venv
+stop_bot() {
+    echo "🛑 Stopping OmniBot..."
+    tmux kill-session -t "$TMUX_SESSION" 2>/dev/null || true
+    pkill -f "python src/main.py" 2>/dev/null || true
+    pkill -f ngrok 2>/dev/null || true
+    rm -f "$PID_FILE"
+    echo "✅ OmniBot stopped"
+}
 
-    if [ -f "$PIDFILE" ]; then
-        PID=$(cat "$PIDFILE")
-        if ps -p "$PID" > /dev/null 2>&1; then
-            warn "OMNIBOT is already running (PID: $PID)"
-            return 1
+restart_bot() {
+    stop_bot
+    sleep 2
+    start_bot "$1"
+}
+
+check_status() {
+    if tmux has-session -t "$TMUX_SESSION" 2>/dev/null; then
+        echo "✅ OmniBot is running"
+        echo "📊 Dashboard: http://localhost:8081"
+        if curl -s http://localhost:4040/api/tunnels >/dev/null 2>&1; then
+            echo "🌐 Ngrok: Active"
+            curl -s http://localhost:4040/api/tunnels | grep -o '"public_url":"[^"]*' | cut -d'"' -f4
         else
-            rm -f "$PIDFILE"
+            echo "🌐 Ngrok: Not running"
         fi
-    fi
-
-    log "Starting OMNIBOT Dashboard..."
-
-    NGROK_FLAG=""
-    if [ "$1" == "--ngrok" ]; then
-        NGROK_FLAG="--ngrok"
-        log "ngrok tunnel enabled"
-    fi
-
-    # Use tmux to keep alive
-    tmux kill-session -t omnibot 2>/dev/null || true
-    tmux new-session -d -s omnibot "cd '$PROJECT_DIR' && python src/main.py --mode dashboard $NGROK_FLAG 2>&1 | tee -a '$LOG_DIR/dashboard.log'"
-
-    sleep 3
-
-    # Get tmux PID
-    TMUX_PID=$(tmux list-panes -t omnibot -F '#{pane_pid}' 2>/dev/null | head -1)
-    if [ -n "$TMUX_PID" ]; then
-        echo "$TMUX_PID" > "$PIDFILE"
-        log "Dashboard started in tmux session 'omnibot'"
-        log "Local: http://localhost:8081"
-
-        if [ -n "$NGROK_FLAG" ]; then
-            sleep 2
-            NGROK_URL=$(curl -s http://localhost:4040/api/tunnels 2>/dev/null | grep -o '"public_url":"[^"]*"' | head -1 | cut -d'"' -f4)
-            if [ -n "$NGROK_URL" ]; then
-                log "External: $NGROK_URL"
-            fi
-        fi
-
-        log "To view: tmux attach -t omnibot"
-        log "To stop: $0 stop"
-        return 0
     else
-        error "Failed to start dashboard"
-        return 1
+        echo "❌ OmniBot is not running"
     fi
 }
 
-stop_dashboard() {
-    log "Stopping OMNIBOT..."
-
-    tmux kill-session -t omnibot 2>/dev/null || true
-    pkill -9 -f "python src/main.py" 2>/dev/null || true
-    pkill -9 -f ngrok 2>/dev/null || true
-
-    rm -f "$PIDFILE"
-
-    log "OMNIBOT stopped"
+update_bot() {
+    echo "🔄 Checking for updates..."
+    cd "$BOT_DIR"
+    python -c "from src.core.auto_updater import AutoUpdater; from config.settings import Settings; u = AutoUpdater(Settings); u.check_for_updates()"
 }
 
-status() {
-    if tmux has-session -t omnibot 2>/dev/null; then
-        log "OMNIBOT is RUNNING in tmux session 'omnibot'"
-
-        # Check ngrok
-        NGROK_URL=$(curl -s http://localhost:4040/api/tunnels 2>/dev/null | grep -o '"public_url":"[^"]*"' | head -1 | cut -d'"' -f4)
-        if [ -n "$NGROK_URL" ]; then
-            log "External URL: $NGROK_URL"
-        fi
-
-        log "Local URL: http://localhost:8081"
-        return 0
-    else
-        warn "OMNIBOT is NOT running"
-        return 1
-    fi
-}
-
-keep_alive() {
-    log "Keep-alive monitor started..."
-    while true; do
-        if ! tmux has-session -t omnibot 2>/dev/null; then
-            warn "OMNIBOT session lost, restarting..."
-            start_dashboard "$1"
-        fi
-
-        # Check ngrok if enabled
-        if [ "$1" == "--ngrok" ]; then
-            if ! curl -s http://localhost:4040/api/tunnels > /dev/null 2>&1; then
-                warn "ngrok tunnel down, restarting..."
-                stop_dashboard
-                sleep 2
-                start_dashboard "$1"
-            fi
-        fi
-
-        sleep 30
-    done
-}
-
-case "${1:-}" in
+case "${1:-start}" in
     start)
-        start_dashboard "${2:-}"
+        start_bot "${2:-}"
         ;;
     stop)
-        stop_dashboard
+        stop_bot
         ;;
     restart)
-        stop_dashboard
-        sleep 2
-        start_dashboard "${2:-}"
+        restart_bot "${2:-}"
         ;;
     status)
-        status
+        check_status
         ;;
-    keep-alive)
-        keep_alive "${2:-}"
+    update)
+        update_bot
         ;;
     attach)
-        tmux attach -t omnibot
+        tmux attach -t "$TMUX_SESSION"
         ;;
     *)
-        echo "OMNIBOT v2.6 Sentinel - Helper Script"
-        echo ""
-        echo "Usage: $0 {start|stop|restart|status|attach|keep-alive} [--ngrok]"
-        echo ""
-        echo "Commands:"
-        echo "  start       - Start dashboard in tmux (detached)"
-        echo "  stop        - Stop dashboard and ngrok"
-        echo "  restart     - Restart dashboard"
-        echo "  status      - Check if running"
-        echo "  attach      - Attach to tmux session"
-        echo "  keep-alive  - Monitor and auto-restart if needed"
-        echo ""
-        echo "Options:"
-        echo "  --ngrok     - Enable external access via ngrok"
-        echo ""
-        echo "Examples:"
-        echo "  $0 start --ngrok    # Start with external access"
-        echo "  $0 keep-alive       # Auto-restart on crash"
+        echo "Usage: $0 {start|stop|restart|status|update|attach} [--ngrok]"
         exit 1
         ;;
 esac
