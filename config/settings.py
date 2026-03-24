@@ -1,10 +1,11 @@
 """
-OmniBot v2.6 Sentinel - Enhanced Configuration
+OmniBot v2.6.1 Sentinel - Enhanced Configuration
 Includes aggressive trading modes and auto-update settings
 """
 
 from enum import Enum
 from dataclasses import dataclass
+from typing import Dict, List, Optional
 
 class TradingMode(Enum):
     CONSERVATIVE = "conservative"
@@ -25,6 +26,7 @@ class StrategyConfig:
 
 class Settings:
     TRADING_MODE = TradingMode.AGGRESSIVE
+    PAPER_TRADING = False
     MAX_CONCURRENT_POSITIONS = 10
     MAX_DAILY_LOSS = 0.10
     AUTO_UPDATE_ENABLED = True

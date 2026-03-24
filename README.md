@@ -11,8 +11,8 @@ Optimized for Raspberry Pi • Zero Cost • Open Source
 ### Option 1: Clone from GitHub (Recommended)
 ```bash
 # Clone the repository
-git clone https://github.com/3D-Magic/OmniBot-Testing.git OmniBot-v2.6
-cd OmniBot-v2.6
+git clone https://github.com/3D-Magic/OmniBot-Testing.git OmniBot-v2.6.1
+cd OmniBot-v2.6.1
 
 # Run setup
 chmod +x setup.sh
@@ -27,8 +27,8 @@ chmod +x setup.sh
 # Download latest release
 wget https://github.com/3D-Magic/OmniBot-Testing/archive/refs/heads/main.zip -O omnibot-v2.6.zip
 unzip omnibot-v2.6.zip
-mv OmniBot-Testing-main OmniBot-v2.6
-cd OmniBot-v2.6
+mv OmniBot-Testing-main OmniBot-v2.6.1
+cd OmniBot-v2.6.1
 
 # Run setup
 chmod +x setup.sh
@@ -40,7 +40,7 @@ chmod +x setup.sh
 
 ### Option 3: Update Existing Installation
 ```bash
-cd ~/OmniBot-v2.6
+cd ~/OmniBot-v2.6.1
 git pull origin main
 ./scripts/omnibot.sh restart --ngrok
 ```

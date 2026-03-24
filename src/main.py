@@ -1,5 +1,5 @@
 """
-OmniBot v2.6 Sentinel Enhanced
+OmniBot v2.6.1 Sentinel Enhanced
 Main entry point with aggressive trading and auto-updates
 """
 
@@ -22,7 +22,7 @@ signal.signal(signal.SIGINT, signal_handler)
 signal.signal(signal.SIGTERM, signal_handler)
 
 def main():
-    parser = argparse.ArgumentParser(description='OmniBot v2.6 Sentinel Enhanced')
+    parser = argparse.ArgumentParser(description='OmniBot v2.6.1 Sentinel Enhanced')
     parser.add_argument('--mode', choices=['conservative', 'moderate', 'aggressive', 'hft', 'sentinel'],
                        default='aggressive', help='Trading mode')
     parser.add_argument('--paper', action='store_true', help='Enable paper trading')
@@ -31,7 +31,7 @@ def main():
     args = parser.parse_args()
 
     print("="*60)
-    print("  🤖 OmniBot v2.6 Sentinel - Enhanced")
+    print("  🤖 OmniBot v2.6.1 Sentinel - Enhanced")
     print("  ML-Enhanced Automated Trading System")
     print("="*60)
 

@@ -1,12 +1,12 @@
 #!/bin/bash
-# OmniBot v2.6 Sentinel - Control Script
+# OmniBot v2.6.1 Sentinel - Control Script
 
 BOT_DIR="$HOME/OmniBot-v2.6"
 PID_FILE="/tmp/omnibot.pid"
 TMUX_SESSION="omnibot"
 
 start_bot() {
-    echo "🤖 Starting OmniBot v2.6 Sentinel..."
+    echo "🤖 Starting OmniBot v2.6.1 Sentinel..."
 
     cd "$BOT_DIR"
 

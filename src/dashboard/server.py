@@ -16,7 +16,7 @@ def index():
 @app.route("/api/status")
 def status():
     return jsonify({
-        "version": "v2.6.0 Enhanced",
+        "version": "v2.6.1 Sentinel",
         "mode": "aggressive",
         "update_available": False
     })
@@ -31,8 +31,8 @@ def set_mode():
 def check_update():
     return jsonify({
         "updateAvailable": False,
-        "currentVersion": "v2.6.0",
-        "latestVersion": "v2.6.0"
+        "currentVersion": "v2.6.1",
+        "latestVersion": "v2.6.1"
     })
 
 @app.route("/api/update/apply", methods=["POST"])

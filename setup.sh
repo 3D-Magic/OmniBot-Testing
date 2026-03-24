@@ -1,9 +1,9 @@
 #!/bin/bash
-# OmniBot v2.6 Sentinel - Setup Script
+# OmniBot v2.6.1 Sentinel - Setup Script
 
 set -e
 
-echo "🤖 OmniBot v2.6 Sentinel - Setup"
+echo "🤖 OmniBot v2.6.1 Sentinel - Setup"
 echo "================================"
 
 PYTHON_VERSION=$(python3 --version 2>&1 | awk '{print $2}')

@@ -45,8 +45,8 @@ class AutoUpdater:
 
             with urllib.request.urlopen(req, context=ctx, timeout=15) as response:
                 data = json.loads(response.read().decode())
-                latest = data.get("tag_name", "v2.6.0")
-                current = "v2.6.0"
+                latest = data.get("tag_name", "v2.6.1")
+                current = "v2.6.1"
 
                 if self._version_compare(latest, current) > 0:
                     print(f"[UPDATER] Update available: {latest}")
