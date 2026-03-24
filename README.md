@@ -80,4 +80,4 @@ git pull origin main
 
 ## 📜 License
 
-MIT License - Open Source
+Personal Use License - Open Source
