@@ -42,7 +42,7 @@ def apply_update():
         time.sleep(2)
         subprocess.Popen([
             "bash", "-c",
-            "cd ~/OmniBot-v2.6 && ./scripts/omnibot.sh restart --ngrok"
+            "cd ~/OmniBot-v2.6.1 && ./scripts/omnibot.sh restart --ngrok"
         ])
     import threading
     threading.Thread(target=update, daemon=True).start()

@@ -1,7 +1,7 @@
 #!/bin/bash
 # OmniBot v2.6.1 Sentinel - Control Script
 
-BOT_DIR="$HOME/OmniBot-v2.6"
+BOT_DIR="$HOME/OmniBot-v2.6.1"
 PID_FILE="/tmp/omnibot.pid"
 TMUX_SESSION="omnibot"
 
@@ -73,12 +73,6 @@ check_status() {
     fi
 }
 
-update_bot() {
-    echo "🔄 Checking for updates..."
-    cd "$BOT_DIR"
-    python -c "from src.core.auto_updater import AutoUpdater; from config.settings import Settings; u = AutoUpdater(Settings); u.check_for_updates()"
-}
-
 case "${1:-start}" in
     start)
         start_bot "${2:-}"
@@ -92,14 +86,11 @@ case "${1:-start}" in
     status)
         check_status
         ;;
-    update)
-        update_bot
-        ;;
     attach)
         tmux attach -t "$TMUX_SESSION"
         ;;
     *)
-        echo "Usage: $0 {start|stop|restart|status|update|attach} [--ngrok]"
+        echo "Usage: $0 {start|stop|restart|status|attach} [--ngrok]"
         exit 1
         ;;
 esac

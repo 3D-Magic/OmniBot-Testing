@@ -1,6 +1,5 @@
 """
 OmniBot v2.6.1 Sentinel - Enhanced Configuration
-Includes aggressive trading modes and auto-update settings
 """
 
 from enum import Enum
@@ -38,6 +37,7 @@ class Settings:
     DASHBOARD_PORT = 8081
     DASHBOARD_PASSWORD = "admin"
     GITHUB_REPO = "3D-Magic/OmniBot-Testing"
+    GITHUB_BRANCH = "V2.6.1-Omnibot_Sentinal"
 
     @classmethod
     def set_trading_mode(cls, mode):

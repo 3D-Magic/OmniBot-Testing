@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """
 OmniBot v2.6.1 Sentinel Enhanced
 Main entry point with aggressive trading and auto-updates
@@ -59,7 +60,7 @@ def main():
     start_dashboard()
 
     print("\n" + "="*60)
-    print("  ✅ OmniBot is running!")
+    print("  ✅ OmniBot v2.6.1 is running!")
     print("  📊 Dashboard: http://localhost:8081")
     print("="*60)
 
@@ -84,7 +85,7 @@ def start_dashboard():
         print(f"[WARNING] Dashboard failed to start: {e}")
 
 def run_setup():
-    print("\n[SETUP] OmniBot v2.6 Setup Wizard")
+    print("\n[SETUP] OmniBot v2.6.1 Setup Wizard")
     print("-" * 40)
 
     import sys

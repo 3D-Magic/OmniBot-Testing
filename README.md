@@ -2,54 +2,66 @@
 
 **ML-Enhanced Automated Trading System with Aggressive Trading Modes & Auto-Updates**
 
-Optimized for Raspberry Pi • Zero Cost • Open Source
-
 ---
 
 ## 🚀 Quick Start
 
-### Option 1: Clone from GitHub (Recommended)
+### Clone from GitHub (Correct Branch)
 ```bash
-# Clone the repository
-git clone https://github.com/3D-Magic/OmniBot-Testing.git OmniBot-v2.6.1
+# Clone the correct branch
+git clone -b V2.6.1-Omnibot_Sentinal https://github.com/3D-Magic/OmniBot-Testing.git OmniBot-v2.6.1
 cd OmniBot-v2.6.1
 
+# Fix permissions
+chmod +x scripts/omnibot.sh setup.sh
+
 # Run setup
-chmod +x setup.sh
 ./setup.sh
 
 # Start with aggressive mode
 ./scripts/omnibot.sh start --ngrok
 ```
 
-### Option 2: Download and Extract
-```bash
-# Download latest release
-wget https://github.com/3D-Magic/OmniBot-Testing/archive/refs/heads/main.zip -O omnibot-v2.6.zip
-unzip omnibot-v2.6.zip
-mv OmniBot-Testing-main OmniBot-v2.6.1
-cd OmniBot-v2.6.1
-
-# Run setup
-chmod +x setup.sh
-./setup.sh
-
-# Start with aggressive mode
-./scripts/omnibot.sh start --ngrok
-```
-
-### Option 3: Update Existing Installation
+### Update Existing Installation
 ```bash
 cd ~/OmniBot-v2.6.1
-git pull origin main
+git pull origin V2.6.1-Omnibot_Sentinal
+chmod +x scripts/omnibot.sh
 ./scripts/omnibot.sh restart --ngrok
 ```
 
 ---
 
-## ✨ What's New in Enhanced
+## 🛠️ Troubleshooting
 
-### 🎛️ 5 Trading Modes (Fixes "Not Trading" Issues)
+### "couldn't find remote ref main"
+Use the correct branch name:
+```bash
+git pull origin V2.6.1-Omnibot_Sentinal
+```
+
+### "Permission denied"
+Fix script permissions:
+```bash
+chmod +x scripts/omnibot.sh
+chmod +x setup.sh
+```
+
+### Fresh Install
+```bash
+cd ~
+rm -rf OmniBot-v2.6.1
+git clone -b V2.6.1-Omnibot_Sentinal https://github.com/3D-Magic/OmniBot-Testing.git OmniBot-v2.6.1
+cd OmniBot-v2.6.1
+chmod +x scripts/omnibot.sh setup.sh
+./setup.sh
+./scripts/omnibot.sh start --ngrok
+```
+
+---
+
+## 🎛️ Trading Modes
+
 | Mode | Confidence | Risk/Trade | Frequency | Use Case |
 |------|-----------|------------|-----------|----------|
 | **Conservative** | 75%+ | 2% | Low | Capital preservation |
@@ -58,26 +70,8 @@ git pull origin main
 | **HFT Scalper** | 48%+ | 5% | Very High | **Scalping** |
 | **Sentinel** | N/A | N/A | None | Monitor-only |
 
-### 🔄 Auto-Update System
-- ✅ **Manual**: "Check for Updates" button in dashboard
-- ✅ **Automatic**: Checks every 24 hours
-- ✅ **Weekend Updates**: Applies when market closed (no manual steps)
-- ✅ **Safe Restart**: Preserves config, auto-restarts dashboard
-
----
-
-## 🛠️ Commands
-
-```bash
-./scripts/omnibot.sh start --ngrok    # Start with external access
-./scripts/omnibot.sh stop             # Stop bot
-./scripts/omnibot.sh restart --ngrok  # Restart
-./scripts/omnibot.sh status           # Check status
-./scripts/omnibot.sh update           # Check for updates
-```
-
 ---
 
 ## 📜 License
 
-Personal Use License - Open Source
+MIT License - Open Source

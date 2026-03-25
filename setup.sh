@@ -18,9 +18,9 @@ fi
 echo "📦 Installing system dependencies..."
 if command -v apt-get &> /dev/null; then
     sudo apt-get update -qq
-    sudo apt-get install -y -qq tmux wget unzip curl
+    sudo apt-get install -y -qq tmux wget unzip curl git
 elif command -v yum &> /dev/null; then
-    sudo yum install -y tmux wget unzip curl
+    sudo yum install -y tmux wget unzip curl git
 fi
 
 echo "📦 Installing Python packages..."

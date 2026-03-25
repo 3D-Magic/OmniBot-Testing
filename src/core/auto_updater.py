@@ -71,13 +71,14 @@ class AutoUpdater:
 
     def apply_update(self):
         print("[UPDATER] Applying update...")
-        script = """#!/bin/bash
-cd ~/OmniBot-v2.6
+        branch = self.settings.GITHUB_BRANCH
+        script = f"""#!/bin/bash
+cd ~/OmniBot-v2.6.1
 echo "[UPDATE] Downloading..."
-wget -q https://github.com/3D-Magic/OmniBot-Testing/archive/main.zip -O /tmp/update.zip
+wget -q https://github.com/3D-Magic/OmniBot-Testing/archive/refs/heads/{branch}.zip -O /tmp/update.zip
 unzip -q -o /tmp/update.zip -d /tmp/
-cp -r /tmp/OmniBot-Testing-main/* .
-rm -rf /tmp/OmniBot-Testing-main /tmp/update.zip
+cp -r /tmp/OmniBot-Testing-{branch}/* .
+rm -rf /tmp/OmniBot-Testing-{branch} /tmp/update.zip
 echo "[UPDATE] Restarting..."
 ./scripts/omnibot.sh restart --ngrok
 """
