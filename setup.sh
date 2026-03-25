@@ -1,139 +1,61 @@
 #!/bin/bash
-# OMNIBOT v2.7 Titan - Automated Setup Script
-# Multi-Market Trading with 24/7 Remote Access
+echo "=========================================="
+echo "OMNIBOT v2.5.1 - Multi-Market Setup"
+echo "=========================================="
 
-set -e
+if [ -f /home/biqu/omnibot/.env ]; then
+    echo "✓ Already configured"
+    echo "Start: sudo systemctl start omnibot-v2.5.service"
+    exit 0
+fi
 
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-CYAN='\033[0;36m'
-NC='\033[0m'
+echo "[1/4] Creating directories..."
+mkdir -p /home/biqu/omnibot/{src/{config,data,database,ml,risk,trading,utils,gui,tests},logs,backups}
 
-log() {
-    echo -e "${GREEN}[SETUP] $1${NC}"
-}
+echo "[2/4] Setting up Python..."
+cd /home/biqu/omnibot
+python3 -m venv venv 2>/dev/null || true
+source venv/bin/activate
+pip install --upgrade pip -q
+pip install -q alpaca-py pandas numpy yfinance sqlalchemy psycopg2-binary pydantic-settings talib-binary pytz redis python-dotenv
 
-warn() {
-    echo -e "${YELLOW}[SETUP] $1${NC}"
-}
+echo ""
+echo "[3/4] API Keys (from https://app.alpaca.markets/)"
+read -p "Alpaca API Key: " alpaca_key
+read -p "Alpaca Secret Key: " alpaca_secret
 
-info() {
-    echo -e "${CYAN}[SETUP] $1${NC}"
-}
+db_pass=$(openssl rand -base64 16 | tr -dc 'a-zA-Z0-9' | head -c 16)
 
-print_banner() {
-    echo -e "${BLUE}"
-    echo "╔══════════════════════════════════════════════════════════╗"
-    echo "║   🤖  OMNIBOT v2.7 Titan - Multi-Market Trading        ║"
-    echo "║                                                          ║"
-    echo "║   Stocks • Crypto • Forex | 24/7 Automated              ║"
-    echo "║   Remote Access: Tailscale | Cloudflare | ngrok         ║"
-    echo "╚══════════════════════════════════════════════════════════╝"
-    echo -e "${NC}"
-}
+echo "[4/4] Creating config..."
+cat > /home/biqu/omnibot/.env << EOF
+ALPACA_API_KEY_ENC='${alpaca_key}'
+ALPACA_SECRET_KEY_ENC='${alpaca_secret}'
+DATABASE_URL='sqlite:///omnibot.db'
+TRADING_MODE='paper'
+EOF
+chmod 600 /home/biqu/omnibot/.env
 
-check_python() {
-    log "Checking Python..."
-    if ! command -v python3 &> /dev/null; then
-        error "❌ Python 3 is required"
-        exit 1
-    fi
+echo "Installing service..."
+sudo tee /etc/systemd/system/omnibot-v2.5.service > /dev/null << 'EOF'
+[Unit]
+Description=OMNIBOT v2.5.1 Multi-Market
+After=network.target
+[Service]
+Type=simple
+User=biqu
+WorkingDirectory=/home/biqu/omnibot/src
+Environment="PYTHONPATH=/home/biqu/omnibot/src"
+EnvironmentFile=/home/biqu/omnibot/.env
+ExecStart=/home/biqu/omnibot/venv/bin/python /home/biqu/omnibot/src/main.py
+Restart=always
+[Install]
+WantedBy=multi-user.target
+EOF
 
-    PYTHON_VERSION=$(python3 --version 2>&1 | awk '{print $2}')
-    log "✅ Found Python $PYTHON_VERSION"
-}
+sudo systemctl daemon-reload
+sudo systemctl enable omnibot-v2.5.service
 
-setup_venv() {
-    log "Setting up virtual environment..."
-
-    if [ -d "venv" ]; then
-        warn "Removing old venv..."
-        rm -rf venv
-    fi
-
-    python3 -m venv venv
-    source venv/bin/activate
-
-    log "Upgrading pip..."
-    pip install --upgrade pip
-}
-
-install_deps() {
-    log "Installing dependencies..."
-    pip install -r requirements.txt
-
-    log "Downloading NLTK data..."
-    python3 -c "import nltk; nltk.download('punkt', quiet=True); nltk.download('stopwords', quiet=True)" 2>/dev/null || true
-}
-
-setup_dirs() {
-    log "Creating directories..."
-    mkdir -p data/cache data/logs data/backtests data/history backups updates
-    chmod +x src/main.py 2>/dev/null || true
-    chmod +x scripts/omnibot.sh 2>/dev/null || true
-    chmod +x scripts/setup_wizard.py 2>/dev/null || true
-}
-
-install_tailscale() {
-    info "Installing Tailscale (optional but recommended)..."
-    echo "Tailscale provides a static IP for 24/7 remote access"
-    read -p "Install Tailscale? (y/n): " -n 1 -r
-    echo
-    if [[ $REPLY =~ ^[Yy]$ ]]; then
-        curl -fsSL https://tailscale.com/install.sh | sudo bash
-        log "✅ Tailscale installed!"
-        warn "Run 'sudo tailscale up' to authenticate"
-    fi
-}
-
-show_next_steps() {
-    echo ""
-    echo -e "${BLUE}"
-    echo "═══════════════════════════════════════════════════════════"
-    echo "  ✅ SETUP COMPLETE!"
-    echo "═══════════════════════════════════════════════════════════"
-    echo -e "${NC}"
-    echo ""
-    echo "Next steps:"
-    echo ""
-    echo "1️⃣  Run Interactive Setup Wizard:"
-    echo "   python src/main.py --setup"
-    echo ""
-    echo "2️⃣  Or manually configure APIs:"
-    echo "   python src/main.py --api-links    # Get API signup URLs"
-    echo "   nano config/settings.py           # Edit configuration"
-    echo ""
-    echo "3️⃣  Setup Remote Access (24/7):"
-    echo "   • Tailscale (Recommended): ./scripts/omnibot.sh install-tailscale"
-    echo "   • Cloudflare: python src/main.py --tunnel-options"
-    echo "   • ngrok: Sign up at https://dashboard.ngrok.com"
-    echo ""
-    echo "4️⃣  Start OMNIBOT:"
-    echo "   ./scripts/omnibot.sh start"
-    echo ""
-    echo "5️⃣  Access Dashboard:"
-    echo "   Local: http://localhost:8081"
-    echo "   Remote: ./scripts/omnibot.sh url"
-    echo ""
-    echo "📚 Documentation:"
-    echo "   python src/main.py --help"
-    echo "   ./scripts/omnibot.sh help"
-    echo ""
-}
-
-main() {
-    print_banner
-    check_python
-    setup_venv
-    install_deps
-    setup_dirs
-    install_tailscale
-
-    echo ""
-    log "✅ Installation Complete!"
-
-    show_next_steps
-}
-
-main "$@"
+echo ""
+echo "✓ Setup complete!"
+echo "Start: sudo systemctl start omnibot-v2.5.service"
+echo "Logs:  sudo journalctl -u omnibot-v2.5.service -f"
