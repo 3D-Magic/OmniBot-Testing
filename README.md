@@ -74,4 +74,4 @@ chmod +x scripts/omnibot.sh setup.sh
 
 ## 📜 License
 
-MIT License - Open Source
+Personal Use License - Open Source
