@@ -1,96 +1,59 @@
 #!/bin/bash
-# OmniBot v2.6.1 Sentinel - Control Script
 
 BOT_DIR="$HOME/OmniBot-v2.6.1"
-PID_FILE="/tmp/omnibot.pid"
-TMUX_SESSION="omnibot"
+SESSION_NAME="omnibot"
 
 start_bot() {
     echo "🤖 Starting OmniBot v2.6.1 Sentinel..."
-
-    cd "$BOT_DIR"
-
-    if [ -f "$PID_FILE" ] && kill -0 $(cat "$PID_FILE") 2>/dev/null; then
-        echo "⚠️  OmniBot is already running!"
-        exit 1
-    fi
-
-    tmux new-session -d -s "$TMUX_SESSION" -n "bot"
-
-    if [[ "$1" == "--ngrok" ]]; then
-        tmux send-keys -t "$TMUX_SESSION:bot" "cd $BOT_DIR && python src/main.py --ngrok" C-m
-        sleep 3
-        tmux split-window -h -t "$TMUX_SESSION"
-        tmux send-keys -t "$TMUX_SESSION:bot" "ngrok http 8081" C-m
-    else
-        tmux send-keys -t "$TMUX_SESSION:bot" "cd $BOT_DIR && python src/main.py" C-m
-    fi
-
-    echo $! > "$PID_FILE"
-
+    cd "$BOT_DIR" || exit 1
+    tmux kill-session -t "$SESSION_NAME" 2>/dev/null
+    tmux new-session -d -s "$SESSION_NAME"
+    tmux send-keys -t "$SESSION_NAME" "cd $BOT_DIR && python3 src/dashboard/server.py" C-m
+    sleep 3
+    tmux split-window -t "$SESSION_NAME"
+    tmux send-keys -t "$SESSION_NAME" "ngrok http 8081" C-m
+    sleep 2
     echo "✅ OmniBot started!"
     echo "📊 Dashboard: http://localhost:8081"
-
-    if [[ "$1" == "--ngrok" ]]; then
-        sleep 2
-        echo "🌐 Fetching ngrok URL..."
-        curl -s http://localhost:4040/api/tunnels | grep -o '"public_url":"[^"]*' | cut -d'"' -f4
-    fi
-
+    echo "🌐 Fetching ngrok URL..."
+    sleep 3
+    NGROK_URL=$(curl -s http://localhost:4040/api/tunnels | grep -o '"public_url":"[^"]*' | cut -d'"' -f4)
+    [ -n "$NGROK_URL" ] && echo "$NGROK_URL"
     echo ""
     echo "Commands:"
-    echo "  View logs:  tmux attach -t omnibot"
+    echo "  View logs:  tmux attach -t $SESSION_NAME"
     echo "  Stop:       ./scripts/omnibot.sh stop"
 }
 
 stop_bot() {
     echo "🛑 Stopping OmniBot..."
-    tmux kill-session -t "$TMUX_SESSION" 2>/dev/null || true
-    pkill -f "python src/main.py" 2>/dev/null || true
-    pkill -f ngrok 2>/dev/null || true
-    rm -f "$PID_FILE"
+    tmux kill-session -t "$SESSION_NAME" 2>/dev/null
+    pkill -9 python3 2>/dev/null
+    pkill ngrok 2>/dev/null
     echo "✅ OmniBot stopped"
 }
 
 restart_bot() {
     stop_bot
     sleep 2
-    start_bot "$1"
+    start_bot
 }
 
-check_status() {
-    if tmux has-session -t "$TMUX_SESSION" 2>/dev/null; then
-        echo "✅ OmniBot is running"
-        echo "📊 Dashboard: http://localhost:8081"
-        if curl -s http://localhost:4040/api/tunnels >/dev/null 2>&1; then
-            echo "🌐 Ngrok: Active"
-            curl -s http://localhost:4040/api/tunnels | grep -o '"public_url":"[^"]*' | cut -d'"' -f4
+get_url() {
+    curl -s http://localhost:4040/api/tunnels | grep -o '"public_url":"[^"]*' | cut -d'"' -f4
+}
+
+case "$1" in
+    start) start_bot ;;
+    stop) stop_bot ;;
+    restart) restart_bot ;;
+    url) get_url ;;
+    status) 
+        if tmux has-session -t "$SESSION_NAME" 2>/dev/null; then
+            echo "✅ OmniBot is running"
+            get_url
         else
-            echo "🌐 Ngrok: Not running"
-        fi
-    else
-        echo "❌ OmniBot is not running"
-    fi
-}
-
-case "${1:-start}" in
-    start)
-        start_bot "${2:-}"
-        ;;
-    stop)
-        stop_bot
-        ;;
-    restart)
-        restart_bot "${2:-}"
-        ;;
-    status)
-        check_status
-        ;;
-    attach)
-        tmux attach -t "$TMUX_SESSION"
-        ;;
-    *)
-        echo "Usage: $0 {start|stop|restart|status|attach} [--ngrok]"
-        exit 1
-        ;;
+            echo "❌ OmniBot is not running"
+        fi ;;
+    *) echo "Usage: ./omnibot.sh {start|stop|restart|url|status}"; exit 1 ;;
 esac

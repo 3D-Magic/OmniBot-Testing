@@ -1,9 +1,4 @@
-"""
-OmniBot v2.6.1 Sentinel - Enhanced Configuration
-"""
-
 from enum import Enum
-from dataclasses import dataclass
 from typing import Dict, List, Optional
 
 class TradingMode(Enum):
@@ -13,19 +8,9 @@ class TradingMode(Enum):
     HFT = "hft"
     SENTINEL = "sentinel"
 
-@dataclass
-class StrategyConfig:
-    name: str
-    enabled: bool = True
-    weight: float = 0.20
-    confidence_threshold: float = 0.75
-    risk_per_trade: float = 0.05
-    aggressive_confidence: float = 0.55
-    hft_confidence: float = 0.48
-
 class Settings:
+    VERSION = "v2.6.1 Sentinel"
     TRADING_MODE = TradingMode.AGGRESSIVE
-    PAPER_TRADING = False
     MAX_CONCURRENT_POSITIONS = 10
     MAX_DAILY_LOSS = 0.10
     AUTO_UPDATE_ENABLED = True
@@ -35,12 +20,11 @@ class Settings:
     AUTO_CLOSE_TIME = "16:00"
     AUTO_CLOSE_WEEKEND = True
     DASHBOARD_PORT = 8081
-    DASHBOARD_PASSWORD = "admin"
     GITHUB_REPO = "3D-Magic/OmniBot-Testing"
-    GITHUB_BRANCH = "V2.6.1-Omnibot_Sentinal"
+    PAPER_TRADING = False
 
     @classmethod
-    def set_trading_mode(cls, mode):
+    def set_trading_mode(cls, mode: str):
         mode_map = {
             "conservative": TradingMode.CONSERVATIVE,
             "moderate": TradingMode.MODERATE,
