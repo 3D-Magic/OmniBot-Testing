@@ -45,4 +45,4 @@ pip3 install flask flask-cors --break-system-packages
 
 ## 📜 License
 
-MIT License
+Personal Use License
