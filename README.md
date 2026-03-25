@@ -1,43 +1,187 @@
-# 🤖 OmniBot v2.6.1 Sentinel
+# 🤖 OMNIBOT v2.7 Titan
 
-**ML-Enhanced Automated Trading System with Aggressive Trading Modes & Auto-Updates**
+**Multi-Market Automated Trading System | 24/7 Remote Access**
+
+> **Stocks** • **Crypto** • **Forex** | Always Accessible | Based on v2.6.1 Sentinel
+
+---
 
 ## 🚀 Quick Start
 
-### Clone from GitHub (Correct Branch)
 ```bash
-git clone -b V2.6.1-Omnibot_Sentinal https://github.com/3D-Magic/OmniBot-Testing.git OmniBot-v2.6.1
-cd OmniBot-v2.6.1
-chmod +x scripts/omnibot.sh
-pip3 install -r requirements.txt --break-system-packages
+# 1. Clone repository
+git clone https://github.com/3D-Magic/OmniBot-Testing.git
+cd OmniBot-Testing
+
+# 2. Run automated setup
+chmod +x setup.sh
+./setup.sh
+
+# 3. Run interactive setup wizard
+python src/main.py --setup
+
+# 4. Start trading
 ./scripts/omnibot.sh start
 ```
 
-### Update Existing Installation
+---
+
+## 🌍 24/7 Remote Access (No Port Forwarding!)
+
+### 🥇 **Tailscale** (Recommended - FREE)
+- ✅ Static IP (never changes)
+- ✅ Full network access (SSH, dashboard, files)
+- ✅ Works even if your home IP changes
+- ✅ Free for personal use
+
 ```bash
-cd ~/OmniBot-v2.6.1
-git pull origin V2.6.1-Omnibot_Sentinal
-./scripts/omnibot.sh restart
+# Install
+./scripts/omnibot.sh install-tailscale
+
+# Or manually
+curl -fsSL https://tailscale.com/install.sh | sudo bash
+sudo tailscale up
+
+# Access from anywhere
+http://your-pc-name:8081
 ```
+
+### 🥈 **Cloudflare Tunnel** (Most Professional - FREE)
+- ✅ Custom domain support
+- ✅ Most reliable uptime
+- ✅ Requires domain name
+
+```bash
+# Install cloudflared
+wget https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb
+sudo dpkg -i cloudflared-linux-amd64.deb
+
+# Setup
+cloudflared tunnel login
+cloudflared tunnel create omnibot
+cloudflared tunnel route dns omnibot yourdomain.com
+cloudflared tunnel run omnibot
+```
+
+### 🥉 **ngrok** (Easiest - FREE tier)
+- ✅ Easiest setup
+- ⚠️ URL changes on restart (free tier)
+
+```bash
+# Sign up: https://dashboard.ngrok.com
+# Get authtoken and configure
+
+# Start with ngrok
+./scripts/omnibot.sh start
+# URL shown in terminal
+```
+
+### 4️⃣ **localhost.run** (No Signup - FREE)
+```bash
+ssh -R 80:localhost:8081 localhost.run
+```
+
+---
+
+## 📊 Multi-Market Trading
+
+| Market | Provider | Status | Setup Time |
+|--------|----------|--------|------------|
+| **US Stocks** | Alpaca | ✅ Ready | 5 min |
+| **Crypto** | Binance/Coinbase/Kraken | ✅ Ready | 5 min |
+| **Forex** | OANDA | ✅ Ready | 5 min |
+| **Options** | Alpaca | ⚠️ Beta | 5 min |
+
+### Market Hours
+- **Stocks**: Mon-Fri 9:30AM-4PM EST
+- **Crypto**: 24/7/365
+- **Forex**: Sun 5PM - Fri 5PM EST
+
+---
+
+## 🎮 Trading Modes (from v2.6.1)
+
+| Mode | Risk | Max Pos | Leverage | Best For |
+|------|------|---------|----------|----------|
+| **Conservative** | 1% | 5 | 1x | Beginners |
+| **Moderate** ⭐ | 2% | 10 | 1x | Most users |
+| **Aggressive** | 5% | 15 | 2x | Experienced |
+| **HFT Scalper** | 2% | 20 | 3x | High frequency |
+| **Sentinel** | 2.5% | 12 | 1.5x | AI-enhanced |
+
+---
 
 ## 🛠️ Commands
 
-| Command | Description |
-|---------|-------------|
-| `./omnibot.sh start` | Start bot with ngrok |
-| `./omnibot.sh stop` | Stop bot |
-| `./omnibot.sh restart` | Restart bot |
-| `./omnibot.sh url` | Get current ngrok URL |
-| `./omnibot.sh status` | Check if running |
+### Bot Control
+```bash
+./scripts/omnibot.sh start              # Start with configured tunnel
+./scripts/omnibot.sh stop               # Stop bot
+./scripts/omnibot.sh restart            # Restart bot
+./scripts/omnibot.sh status             # Check status & URLs
+./scripts/omnibot.sh url                # Get remote access URL
+./scripts/omnibot.sh logs               # View real-time logs
+./scripts/omnibot.sh install-tailscale  # Install Tailscale
+```
 
-## 📊 Features
+### Setup & Configuration
+```bash
+python src/main.py --setup              # Interactive setup wizard
+python src/main.py --api-links          # Show API signup URLs
+python src/main.py --trading-modes      # View trading modes
+python src/main.py --tunnel-options     # Show remote access options
+python src/main.py --api-status         # Check API configuration
+python src/main.py --change-password    # Change dashboard password
+python src/main.py --install-tailscale  # Install Tailscale
+```
 
-- **Trading Modes**: Conservative, Moderate, Aggressive, HFT Scalper, Sentinel
-- **Auto-Update**: Weekend automatic updates
-- **Dashboard**: Web interface with mode selector
-- **Update/Restart Buttons**: One-click operations
-- **API Endpoints**: /api/positions, /api/portfolio, /api/strategies, /api/system, /api/history
+---
 
+## 🔗 API Signup Links
+
+| Service | URL | Cost |
+|---------|-----|------|
+| **Alpaca (Stocks)** | https://alpaca.markets | FREE |
+| **Binance (Crypto)** | https://binance.com | FREE (testnet) |
+| **OANDA (Forex)** | https://oanda.com/demo-account | FREE |
+| **Tailscale** | https://login.tailscale.com/start | FREE |
+| **Cloudflare** | https://dash.cloudflare.com/sign-up | FREE |
+| **ngrok** | https://dashboard.ngrok.com/signup | FREE tier |
+
+---
+
+## 🎨 Dashboard Features
+
+- ✅ **Total Capital Display** with profit % badge (top right)
+- ✅ **Multi-Market Tabs** (Stocks/Crypto/Forex/All)
+- ✅ **Time Period Cards** (Week/Month/Year/All Time)
+- ✅ **Circular Progress Gauges** with win/loss stats
+- ✅ **Real-time Charts** (Account Balance, R:R)
+- ✅ **Trade History** with P&L indicators
+- ✅ **Monthly Performance Grid**
+- ✅ **Dark Professional Theme**
+
+---
+
+## 🆘 Troubleshooting
+
+### Port 8081 in use
+```bash
+./scripts/omnibot.sh stop
+pkill -9 -f "python src/main.py"
+```
+
+### Tailscale not connecting
+```bash
+sudo tailscale up
+# Authenticate in browser
+```
+
+### Missing dependencies
+```bash
+source venv/bin/activate
+pip install -r requirements.txt
+```
 ## 📜 License
 
 Personal Use License

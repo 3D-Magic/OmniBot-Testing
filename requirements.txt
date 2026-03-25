@@ -1,6 +1,41 @@
-flask>=2.0.0
-flask-cors>=3.0.0
-numpy>=1.20.0
-pandas>=1.3.0
-requests>=2.25.0
-pyyaml>=5.4.0
+# OMNIBOT v2.7 Titan - Multi-Market Trading
+# 24/7 Remote Access | Stocks + Crypto + Forex
+
+# Core Framework
+flask>=2.3.0
+flask-socketio>=5.3.0
+eventlet>=0.33.0
+requests>=2.31.0
+python-dotenv>=1.0.0
+
+# Data & Analysis
+numpy>=1.24.0
+pandas>=2.0.0
+scikit-learn>=1.3.0
+python-dateutil>=2.8.0
+pytz>=2023.3
+
+# Market Data
+yfinance>=0.2.28
+
+# Crypto Trading (100+ exchanges)
+ccxt>=4.0.0
+
+# Forex Trading (OANDA)
+v20>=3.0.25
+
+# Remote Access Tunnels
+pyngrok>=6.0.0
+
+# Sentiment Analysis
+nltk>=3.8.1
+textblob>=0.17.1
+feedparser>=6.0.10
+praw>=7.7.0
+
+# Utilities
+colorama>=0.4.6
+tqdm>=4.66.0
+schedule>=1.2.0
+
+# Note: No TensorFlow - uses scikit-learn for ML (better Pi/PC compatibility)
