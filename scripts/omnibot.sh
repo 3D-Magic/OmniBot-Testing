@@ -8,7 +8,7 @@ start_bot() {
     cd "$BOT_DIR" || exit 1
     tmux kill-session -t "$SESSION_NAME" 2>/dev/null
     tmux new-session -d -s "$SESSION_NAME"
-    tmux send-keys -t "$SESSION_NAME" "cd $BOT_DIR && python3 src/dashboard/server.py" C-m
+    tmux send-keys -t "$SESSION_NAME" "cd $BOT_DIR && python3 src/main.py --mode aggressive" C-m
     sleep 3
     tmux split-window -t "$SESSION_NAME"
     tmux send-keys -t "$SESSION_NAME" "ngrok http 8081" C-m

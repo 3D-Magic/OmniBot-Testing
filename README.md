@@ -1,6 +1,6 @@
 # 🤖 OmniBot v2.6.1 Sentinel
 
-**ML-Enhanced Automated Trading System**
+**ML-Enhanced Automated Trading System with Aggressive Trading Modes & Auto-Updates**
 
 ## 🚀 Quick Start
 
@@ -9,14 +9,15 @@
 git clone -b V2.6.1-Omnibot_Sentinal https://github.com/3D-Magic/OmniBot-Testing.git OmniBot-v2.6.1
 cd OmniBot-v2.6.1
 chmod +x scripts/omnibot.sh
-./scripts/omnibot.sh start --ngrok
+pip3 install -r requirements.txt --break-system-packages
+./scripts/omnibot.sh start
 ```
 
 ### Update Existing Installation
 ```bash
 cd ~/OmniBot-v2.6.1
 git pull origin V2.6.1-Omnibot_Sentinal
-./scripts/omnibot.sh restart --ngrok
+./scripts/omnibot.sh restart
 ```
 
 ## 🛠️ Commands
@@ -29,19 +30,13 @@ git pull origin V2.6.1-Omnibot_Sentinal
 | `./omnibot.sh url` | Get current ngrok URL |
 | `./omnibot.sh status` | Check if running |
 
-## 📊 Dashboard Features
+## 📊 Features
 
-- Trading modes: Conservative, Moderate, Aggressive, HFT, Sentinel
-- Update & restart buttons
-- Auto-update on weekends
-- Portfolio tracking
-- Strategy monitoring
-
-## 🔧 Requirements
-
-```bash
-pip3 install flask flask-cors --break-system-packages
-```
+- **Trading Modes**: Conservative, Moderate, Aggressive, HFT Scalper, Sentinel
+- **Auto-Update**: Weekend automatic updates
+- **Dashboard**: Web interface with mode selector
+- **Update/Restart Buttons**: One-click operations
+- **API Endpoints**: /api/positions, /api/portfolio, /api/strategies, /api/system, /api/history
 
 ## 📜 License
 

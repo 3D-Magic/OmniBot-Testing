@@ -156,6 +156,9 @@ def get_history():
 def get_system():
     return jsonify({"cpu": 15.2, "memory": 45.8, "disk": 32.1, "uptime": "3 days, 4 hours", "version": "v2.6.1 Sentinel"})
 
+def run_dashboard(port=8081):
+    print(f"[DASHBOARD] Starting OmniBot v2.6.1 Sentinel on port {port}")
+    app.run(host="0.0.0.0", port=port, debug=False, use_reloader=False, threaded=True)
+
 if __name__ == "__main__":
-    print("[DASHBOARD] Starting OmniBot v2.6.1 Sentinel on port 8081")
-    app.run(host="0.0.0.0", port=8081, debug=False, use_reloader=False, threaded=True)
+    run_dashboard()

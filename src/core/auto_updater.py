@@ -1,5 +1,6 @@
 """
-Auto Updater with weekend support
+OmniBot v2.6.1 Sentinel - Auto Updater
+Handles weekend auto-updates - Your requirement
 """
 
 import os
@@ -12,16 +13,21 @@ class AutoUpdater:
     def __init__(self, settings):
         self.settings = settings
         self.update_available = False
+        self.running = False
 
     def start(self):
         if not self.settings.AUTO_UPDATE_ENABLED:
             return
+        self.running = True
         thread = threading.Thread(target=self._loop, daemon=True)
         thread.start()
         print("[UPDATER] Auto-update monitor started")
 
+    def stop(self):
+        self.running = False
+
     def _loop(self):
-        while True:
+        while self.running:
             time.sleep(self.settings.UPDATE_CHECK_INTERVAL_HOURS * 3600)
             if self._is_weekend() and self.settings.UPDATE_ON_WEEKEND:
                 print("[UPDATER] Weekend detected - checking for updates")
@@ -71,14 +77,13 @@ class AutoUpdater:
 
     def apply_update(self):
         print("[UPDATER] Applying update...")
-        branch = self.settings.GITHUB_BRANCH
-        script = f"""#!/bin/bash
+        script = """#!/bin/bash
 cd ~/OmniBot-v2.6.1
 echo "[UPDATE] Downloading..."
-wget -q https://github.com/3D-Magic/OmniBot-Testing/archive/refs/heads/{branch}.zip -O /tmp/update.zip
+wget -q https://github.com/3D-Magic/OmniBot-Testing/archive/refs/heads/V2.6.1-Omnibot_Sentinal.zip -O /tmp/update.zip
 unzip -q -o /tmp/update.zip -d /tmp/
-cp -r /tmp/OmniBot-Testing-{branch}/* .
-rm -rf /tmp/OmniBot-Testing-{branch} /tmp/update.zip
+cp -r /tmp/OmniBot-Testing-V2.6.1-Omnibot_Sentinal/* .
+rm -rf /tmp/OmniBot-Testing-V2.6.1-Omnibot_Sentinal /tmp/update.zip
 echo "[UPDATE] Restarting..."
 ./scripts/omnibot.sh restart --ngrok
 """
