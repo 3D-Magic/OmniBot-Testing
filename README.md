@@ -2,6 +2,9 @@
 
 **Multi-Market Automated Trading System | 24/7 Remote Access**
 
+<img width="782" height="291" alt="image" src="https://github.com/user-attachments/assets/28d745cc-92e8-46aa-87aa-a2a7dbf569fc" />
+
+
 > **Stocks** • **Crypto** • **Forex** | Always Accessible | Based on v2.6.1 Sentinel
 
 ---
