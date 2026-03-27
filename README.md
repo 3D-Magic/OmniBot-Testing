@@ -1,29 +1,63 @@
+
+
+Kimi: Here's the rewritten README.md with the proper first setup steps included:
+
+```markdown
 # 🤖 OMNIBOT v2.7 Titan
+
+
+
+> **Stocks** • **Crypto** • **Forex** | Always Accessible | Based on v2.6.1 Sentinel
+
+
+
 
 **Multi-Market Automated Trading System | 24/7 Remote Access**
 
-<img width="782" height="291" alt="image" src="https://github.com/user-attachments/assets/28d745cc-92e8-46aa-87aa-a2a7dbf569fc" />
-
+![OmniBot Diagram](https://kimi-web-img.moonshot.cn/img/raw.githubusercontent.com/3D-Magic/OmniBot-Testing/main/docs/diagram.png)
 
 > **Stocks** • **Crypto** • **Forex** | Always Accessible | Based on v2.6.1 Sentinel
 
 ---
 
-## 🚀 Quick Start
+## 🚀 First Time Setup (Fresh Install)
 
-```
-# 1. Clone repository
+For new installations on a clean SD card or fresh OS:
+
+```bash
+# 1. Update system
+sudo apt update && sudo apt upgrade -y
+
+# 2. Install required packages
+sudo apt install -y git python3 python3-pip python3-venv
+
+# 3. Clone the repository
 git clone https://github.com/3D-Magic/OmniBot-Testing.git
+
+# 4. Enter the directory
 cd OmniBot-Testing
 
-# 2. Run automated setup
+# 5. Run setup (with unbuffered flag for Putty)
+python3 -u src/main.py --setup
+```
+
+**Note for Putty users:** The `-u` flag forces unbuffered output, preventing terminal freezes during interactive setup.
+
+---
+
+## 🚀 Quick Start (Already Cloned)
+
+If you've already cloned the repository:
+
+```bash
+# Run automated setup
 chmod +x setup.sh
 ./setup.sh
 
-# 3. Run interactive setup wizard
-python src/main.py --setup
+# Or run interactive setup wizard directly
+python3 -u src/main.py --setup
 
-# 4. Start trading
+# Start trading
 ./scripts/omnibot.sh start
 ```
 
@@ -37,7 +71,7 @@ python src/main.py --setup
 - Works even if your home IP changes
 - Free for personal use
 
-```
+```bash
 # Install
 ./scripts/omnibot.sh install-tailscale
 
@@ -54,7 +88,7 @@ http://your-pc-name:8081
 - Most reliable uptime
 - Requires domain name
 
-```
+```bash
 # Install cloudflared
 wget https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb
 sudo dpkg -i cloudflared-linux-amd64.deb
@@ -70,7 +104,7 @@ cloudflared tunnel run omnibot
 - Easiest setup
 - URL changes on restart (free tier)
 
-```
+```bash
 # Sign up: https://dashboard.ngrok.com
 # Get authtoken and configure
 
@@ -80,8 +114,7 @@ cloudflared tunnel run omnibot
 ```
 
 ### 4️⃣ localhost.run (No Signup - FREE)
-
-```
+```bash
 ssh -R 80:localhost:8081 localhost.run
 ```
 
@@ -97,9 +130,9 @@ ssh -R 80:localhost:8081 localhost.run
 | Options | Alpaca | Beta | 5 min |
 
 ### Market Hours
-- Stocks: Mon-Fri 9:30AM-4PM EST
-- Crypto: 24/7/365
-- Forex: Sun 5PM - Fri 5PM EST
+- **Stocks:** Mon-Fri 9:30AM-4PM EST
+- **Crypto:** 24/7/365
+- **Forex:** Sun 5PM - Fri 5PM EST
 
 ---
 
@@ -118,7 +151,7 @@ ssh -R 80:localhost:8081 localhost.run
 ## 🛠️ Commands
 
 ### Bot Control
-```
+```bash
 ./scripts/omnibot.sh start              # Start with configured tunnel
 ./scripts/omnibot.sh stop               # Stop bot
 ./scripts/omnibot.sh restart            # Restart bot
@@ -129,14 +162,14 @@ ssh -R 80:localhost:8081 localhost.run
 ```
 
 ### Setup & Configuration
-```
-python src/main.py --setup              # Interactive setup wizard
-python src/main.py --api-links          # Show API signup URLs
-python src/main.py --trading-modes      # View trading modes
-python src/main.py --tunnel-options     # Show remote access options
-python src/main.py --api-status         # Check API configuration
-python src/main.py --change-password    # Change dashboard password
-python src/main.py --install-tailscale  # Install Tailscale
+```bash
+python3 src/main.py --setup              # Interactive setup wizard
+python3 src/main.py --api-links          # Show API signup URLs
+python3 src/main.py --trading-modes      # View trading modes
+python3 src/main.py --tunnel-options     # Show remote access options
+python3 src/main.py --api-status         # Check API configuration
+python3 src/main.py --change-password    # Change dashboard password
+python3 src/main.py --install-tailscale  # Install Tailscale
 ```
 
 ---
@@ -169,22 +202,32 @@ python src/main.py --install-tailscale  # Install Tailscale
 
 ## 🆘 Troubleshooting
 
+### Putty Freezing During Setup
+Use unbuffered mode: `python3 -u src/main.py --setup`
+
 ### Port 8081 in use
-```
+```bash
 ./scripts/omnibot.sh stop
-pkill -9 -f "python src/main.py"
+pkill -9 -f "python3 src/main.py"
 ```
 
 ### Tailscale not connecting
-```
+```bash
 sudo tailscale up
 # Authenticate in browser
 ```
 
 ### Missing dependencies
-```
+```bash
 source venv/bin/activate
 pip install -r requirements.txt
+```
+
+### File not found errors
+Ensure you're in the OmniBot-Testing directory:
+```bash
+cd ~/OmniBot-Testing
+pwd  # Should show /home/biqu/OmniBot-Testing or similar
 ```
 
 ---
@@ -192,3 +235,4 @@ pip install -r requirements.txt
 ## 📜 License
 
 Personal Use License
+```
