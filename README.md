@@ -1,8 +1,3 @@
-
-
-Kimi: Here's the rewritten README.md with the proper first setup steps included:
-
-```markdown
 # 🤖 OMNIBOT v2.7 Titan
 
 
