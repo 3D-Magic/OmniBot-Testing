@@ -115,13 +115,16 @@ sudo systemctl start omnibot-dashboard
 ## 🖼️ Screenshots
 
 ### Main Dashboard
-![Dashboard](docs/dashboard.png)
+<img width="2558" height="1261" alt="image" src="https://github.com/user-attachments/assets/efd45985-e57d-4ed5-ad84-035cda2ad4d4" />
+
 
 ### WiFi Setup
-![WiFi](docs/wifi-setup.png)
+<img width="906" height="674" alt="image" src="https://github.com/user-attachments/assets/44a9969d-d143-4114-9972-ba0b54abbc24" />
+
 
 ### API Key Management
-![Settings](docs/settings.png)
+<img width="550" height="799" alt="image" src="https://github.com/user-attachments/assets/081e3585-f357-44a8-abb5-da25baa0e239" />
+
 
 ---
 
@@ -195,7 +198,7 @@ python src/dashboard/app.py
 
 ## 📜 License
 
-MIT License - see [LICENSE](LICENSE) file
+Personal Use License - see [LICENSE](LICENSE) file
 
 ---
 
