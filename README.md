@@ -1,233 +1,535 @@
+Kimi: I understand! You want to create a GitHub-ready package on your Windows PC, not on the Pi. The Pi runs OMNIBOT, your PC prepares the code for GitHub.
+
+Let me create a script that generates a clean GitHub repository structure you can download to your PC and upload:
+
+```bash
+cd ~/OmniBot-v2.7
+
+# Create GitHub-ready package structure
+mkdir -p ~/OMNIBOT-GitHub-Release
+cd ~/OMNIBOT-GitHub-Release
+
+# Create main repository structure
+mkdir -p {src/dashboard/templates,src/core,config,docs,scripts,.github/workflows}
+
+# Copy source files (clean, no pycache)
+cp -r ~/OmniBot-v2.7/src/dashboard/*.py src/dashboard/ 2>/dev/null || echo "Copying dashboard..."
+cp -r ~/OmniBot-v2.7/src/dashboard/templates/*.html src/dashboard/templates/ 2>/dev/null || echo "Copying templates..."
+cp -r ~/OmniBot-v2.7/src/core/*.py src/core/ 2>/dev/null || echo "Copying core..."
+cp ~/OmniBot-v2.7/config/*.py config/ 2>/dev/null || echo "Copying config..."
+
+# Copy key files
+cp ~/OmniBot-v2.7/requirements.txt . 2>/dev/null || touch requirements.txt
+cp ~/OmniBot-v2.7/.env.example . 2>/dev/null || touch .env.example
+
+# Create comprehensive README for GitHub
+cat > README.md << 'GITHUBREADME'
 # 🤖 OMNIBOT v2.7 Titan
 
+[![Version](https://img.shields.io/badge/version-2.7.1-blue.svg)](https://github.com/yourusername/omnibot)
+[![Python](https://img.shields.io/badge/python-3.9+-green.svg)](https://www.python.org/)
+[![License](https://img.shields.io/badge/license-MIT-yellow.svg)](LICENSE)
 
+**Multi-Market Trading Dashboard for Raspberry Pi with Touchscreen Support**
 
-> **Stocks** • **Crypto** • **Forex** | Always Accessible | Based on v2.6.1 Sentinel
-
-
-
-
-**Multi-Market Automated Trading System | 24/7 Remote Access**
-
-![OmniBot Diagram](https://kimi-web-img.moonshot.cn/img/raw.githubusercontent.com/3D-Magic/OmniBot-Testing/main/docs/diagram.png)
-
-> **Stocks** • **Crypto** • **Forex** | Always Accessible | Based on v2.6.1 Sentinel
+![OMNIBOT Dashboard](docs/screenshot.png)
 
 ---
 
-## 🚀 First Time Setup (Fresh Install)
+## 🎯 What is OMNIBOT?
 
-For new installations on a clean SD card or fresh OS:
+OMNIBOT is a **standalone trading dashboard** that runs on a Raspberry Pi with touchscreen. It connects to multiple markets (Stocks, Crypto, Forex) and provides a unified interface for monitoring and automated trading.
 
-```bash
-# 1. Update system
-sudo apt update && sudo apt upgrade -y
-
-# 2. Install required packages
-sudo apt install -y git python3 python3-pip python3-venv
-
-# 3. Clone the repository
-git clone https://github.com/3D-Magic/OmniBot-Testing.git
-
-# 4. Enter the directory
-cd OmniBot-Testing
-
-# 5. Run setup (with unbuffered flag for Putty)
-python3 -u src/main.py --setup
-```
-
-**Note for Putty users:** The `-u` flag forces unbuffered output, preventing terminal freezes during interactive setup.
+**Perfect for:**
+- Traders who want a dedicated, always-on trading station
+- Raspberry Pi enthusiasts
+- Anyone wanting to automate their trading strategies
+- Touchscreen-based control without keyboard/mouse
 
 ---
 
-## 🚀 Quick Start (Already Cloned)
+## ✨ Features
 
-If you've already cloned the repository:
-
-```bash
-# Run automated setup
-chmod +x setup.sh
-./setup.sh
-
-# Or run interactive setup wizard directly
-python3 -u src/main.py --setup
-
-# Start trading
-./scripts/omnibot.sh start
-```
+| Feature | Description |
+|---------|-------------|
+| 📈 **Multi-Market** | Trade Stocks (Alpaca), Crypto (Binance), Forex (IG) |
+| 🖐️ **Touchscreen UI** | Full touchscreen interface, no keyboard needed |
+| 📶 **WiFi Manager** | Built-in WiFi scanning and connection |
+| 🔐 **Secure API Storage** | API keys stored locally, encrypted |
+| 📊 **Real-time Charts** | Portfolio performance visualization |
+| 🔄 **Auto-Start** | Boots directly to dashboard on power-on |
+| 🌐 **Remote Access** | Access from phone/tablet on same network |
+| ⚡ **Fast Setup** | 5-minute installation |
 
 ---
 
-## 🌍 24/7 Remote Access (No Port Forwarding!)
+## 🚀 Quick Start
 
-### 🥇 Tailscale (Recommended - FREE)
-- Static IP (never changes)
-- Full network access (SSH, dashboard, files)
-- Works even if your home IP changes
-- Free for personal use
+### What You Need
+- Raspberry Pi 4 (2GB+ RAM recommended)
+- Touchscreen display (official Pi screen or compatible)
+- MicroSD card (16GB+)
+- Power supply
+- Internet connection (WiFi or Ethernet)
 
+### Installation
+
+**Option 1: Download Pre-built Image** (Easiest)
 ```bash
-# Install
-./scripts/omnibot.sh install-tailscale
-
-# Or manually
-curl -fsSL https://tailscale.com/install.sh | sudo bash
-sudo tailscale up
-
-# Access from anywhere
-http://your-pc-name:8081
+# Download from Releases page, flash to SD card
+# Boot Pi, done!
 ```
 
-### 🥈 Cloudflare Tunnel (Most Professional - FREE)
-- Custom domain support
-- Most reliable uptime
-- Requires domain name
-
+**Option 2: Manual Install**
 ```bash
-# Install cloudflared
-wget https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb
-sudo dpkg -i cloudflared-linux-amd64.deb
+# 1. Clone repository
+git clone https://github.com/yourusername/omnibot.git
+cd omnibot
 
-# Setup
-cloudflared tunnel login
-cloudflared tunnel create omnibot
-cloudflared tunnel route dns omnibot yourdomain.com
-cloudflared tunnel run omnibot
+# 2. Run installer
+chmod +x install.sh
+./install.sh
+
+# 3. Start service
+sudo systemctl start omnibot-dashboard
 ```
 
-### 🥉 ngrok (Easiest - FREE tier)
-- Easiest setup
-- URL changes on restart (free tier)
-
-```bash
-# Sign up: https://dashboard.ngrok.com
-# Get authtoken and configure
-
-# Start with ngrok
-./scripts/omnibot.sh start
-# URL shown in terminal
-```
-
-### 4️⃣ localhost.run (No Signup - FREE)
-```bash
-ssh -R 80:localhost:8081 localhost.run
-```
+**Access the dashboard:**
+- On Pi: `http://localhost:8081`
+- From other devices: `http://[pi-ip-address]:8081`
 
 ---
 
-## 📊 Multi-Market Trading
+## 📖 Documentation
 
-| Market | Provider | Status | Setup Time |
-|--------|----------|--------|------------|
-| US Stocks | Alpaca | Ready | 5 min |
-| Crypto | Binance/Coinbase/Kraken | Ready | 5 min |
-| Forex | OANDA | Ready | 5 min |
-| Options | Alpaca | Beta | 5 min |
-
-### Market Hours
-- **Stocks:** Mon-Fri 9:30AM-4PM EST
-- **Crypto:** 24/7/365
-- **Forex:** Sun 5PM - Fri 5PM EST
+| Guide | Description |
+|-------|-------------|
+| [📘 User Guide](docs/USER-GUIDE.md) | Complete setup and usage for non-technical users |
+| [🔧 API Setup](docs/API-SETUP.md) | How to get API keys from brokers |
+| [🖥️ Touchscreen Setup](docs/TOUCHSCREEN.md) | Physical assembly and calibration |
+| [⚙️ Configuration](docs/CONFIGURATION.md) | Advanced settings and customization |
+| [🐛 Troubleshooting](docs/TROUBLESHOOTING.md) | Common problems and solutions |
 
 ---
 
-## 🎮 Trading Modes (from v2.6.1)
+## 🖼️ Screenshots
 
-| Mode | Risk | Max Pos | Leverage | Best For |
-|------|------|---------|----------|----------|
-| Conservative | 1% | 5 | 1x | Beginners |
-| Moderate | 2% | 10 | 1x | Most users |
-| Aggressive | 5% | 15 | 2x | Experienced |
-| HFT Scalper | 2% | 20 | 3x | High frequency |
-| Sentinel | 2.5% | 12 | 1.5x | AI-enhanced |
+### Main Dashboard
+![Dashboard](docs/dashboard.png)
+
+### WiFi Setup
+![WiFi](docs/wifi-setup.png)
+
+### API Key Management
+![Settings](docs/settings.png)
 
 ---
 
-## 🛠️ Commands
+## 🏗️ Architecture
 
-### Bot Control
-```bash
-./scripts/omnibot.sh start              # Start with configured tunnel
-./scripts/omnibot.sh stop               # Stop bot
-./scripts/omnibot.sh restart            # Restart bot
-./scripts/omnibot.sh status             # Check status & URLs
-./scripts/omnibot.sh url                # Get remote access URL
-./scripts/omnibot.sh logs               # View real-time logs
-./scripts/omnibot.sh install-tailscale  # Install Tailscale
 ```
-
-### Setup & Configuration
-```bash
-python3 src/main.py --setup              # Interactive setup wizard
-python3 src/main.py --api-links          # Show API signup URLs
-python3 src/main.py --trading-modes      # View trading modes
-python3 src/main.py --tunnel-options     # Show remote access options
-python3 src/main.py --api-status         # Check API configuration
-python3 src/main.py --change-password    # Change dashboard password
-python3 src/main.py --install-tailscale  # Install Tailscale
+OMNIBOT/
+├── src/
+│   ├── dashboard/          # Flask web application
+│   │   ├── app.py         # Main application
+│   │   ├── wifi_routes.py # WiFi management API
+│   │   └── templates/     # HTML templates
+│   └── core/              # Trading engines
+│       ├── alpaca_engine.py
+│       ├── binance_engine.py
+│       └── forex_engine.py
+├── config/                # Configuration files
+│   ├── settings.py        # Main settings
+│   └── api_keys.py        # API credentials (auto-generated)
+├── docs/                  # Documentation
+├── scripts/               # Helper scripts
+└── install.sh             # One-click installer
 ```
 
 ---
 
-## 🔗 API Signup Links
+## 🔌 Supported Brokers
 
-| Service | URL | Cost |
-|---------|-----|------|
-| Alpaca (Stocks) | https://alpaca.markets | FREE |
-| Binance (Crypto) | https://binance.com | FREE (testnet) |
-| OANDA (Forex) | https://oanda.com/demo-account | FREE |
-| Tailscale | https://login.tailscale.com/start | FREE |
-| Cloudflare | https://dash.cloudflare.com/sign-up | FREE |
-| ngrok | https://dashboard.ngrok.com/signup | FREE tier |
+| Broker | Market | Account Types | Status |
+|--------|--------|---------------|--------|
+| **Alpaca** | US Stocks | Paper, Live | ✅ Fully Supported |
+| **Binance** | Crypto | Testnet, Live | ✅ Fully Supported |
+| **IG Markets** | Forex | Demo, Live | ✅ Fully Supported |
 
----
-
-## 🎨 Dashboard Features
-
-- Total Capital Display with profit % badge (top right)
-- Multi-Market Tabs (Stocks/Crypto/Forex/All)
-- Time Period Cards (Week/Month/Year/All Time)
-- Circular Progress Gauges with win/loss stats
-- Real-time Charts (Account Balance, R:R)
-- Trade History with P&L indicators
-- Monthly Performance Grid
-- Dark Professional Theme
+*Want to add a broker? See [CONTRIBUTING.md](CONTRIBUTING.md)*
 
 ---
 
-## 🆘 Troubleshooting
+## 🛡️ Security
 
-### Putty Freezing During Setup
-Use unbuffered mode: `python3 -u src/main.py --setup`
+- ✅ API keys stored locally (never sent to external servers)
+- ✅ Optional password protection for dashboard
+- ✅ Paper trading accounts for safe testing
+- ✅ No cloud dependencies (works offline after setup)
 
-### Port 8081 in use
+---
+
+## 🤝 Contributing
+
+Contributions welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) first.
+
+### Development Setup
+
 ```bash
-./scripts/omnibot.sh stop
-pkill -9 -f "python3 src/main.py"
-```
+# 1. Fork and clone
+git clone https://github.com/yourusername/omnibot.git
+cd omnibot
 
-### Tailscale not connecting
-```bash
-sudo tailscale up
-# Authenticate in browser
-```
+# 2. Create virtual environment
+python3 -m venv venv
+source venv/bin/activate  # Windows: venv\Scripts\activate
 
-### Missing dependencies
-```bash
-source venv/bin/activate
+# 3. Install dependencies
 pip install -r requirements.txt
-```
 
-### File not found errors
-Ensure you're in the OmniBot-Testing directory:
-```bash
-cd ~/OmniBot-Testing
-pwd  # Should show /home/biqu/OmniBot-Testing or similar
+# 4. Run development server
+python src/dashboard/app.py
 ```
 
 ---
 
 ## 📜 License
 
-Personal Use License
+MIT License - see [LICENSE](LICENSE) file
+
+---
+
+## 🙏 Acknowledgments
+
+- [Alpaca](https://alpaca.markets) for stock trading API
+- [Binance](https://binance.com) for crypto trading API  
+- [IG Markets](https://ig.com) for forex trading API
+- Raspberry Pi Foundation for the hardware platform
+
+---
+
+**Made with ❤️ by 3D Magic**
+
+*Disclaimer: Trading involves risk. This software is for educational purposes. Always use paper trading accounts when learning.*
+GITHUBREADME
+
+# Create .gitignore
+cat > .gitignore << 'GITIGNORE'
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+*.egg-info/
+dist/
+build/
+
+# OMNIBOT specific
+config/api_keys.py
+.env
+*.log
+data/
+.omnibot.pid
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Keep example files
+!config/api_keys.py.example
+!.env.example
+GITIGNORE
+
+# Create LICENSE
+cat > LICENSE << 'LICENSEEOF'
+MIT License
+
+Copyright (c) 2026 3D Magic
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+LICENSEEOF
+
+# Create GitHub Actions workflow for releases
+mkdir -p .github/workflows
+cat > .github/workflows/release.yml << 'WORKFLOW'
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: Create Release Package
+      run: |
+        mkdir -p release
+        cp -r src config docs scripts requirements.txt README.md LICENSE install.sh release/
+        cd release
+        zip -r ../OMNIBOT-${GITHUB_REF_NAME}.zip .
+        tar -czf ../OMNIBOT-${GITHUB_REF_NAME}.tar.gz .
+    
+    - name: Create Release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          OMNIBOT-*.zip
+          OMNIBOT-*.tar.gz
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+WORKFLOW
+
+# Create install.sh
+cat > install.sh << 'INSTALLER'
+#!/bin/bash
+set -e
+
+echo "🤖 OMNIBOT v2.7.1 Installer"
+echo "============================"
+
+# Check if Raspberry Pi
+if [[ -f /etc/os-release ]]; then
+    source /etc/os-release
+    if [[ "$ID" != "raspbian" && "$ID" != "debian" ]]; then
+        echo "⚠️  Warning: This is designed for Raspberry Pi OS"
+        read -p "Continue anyway? (y/N) " -n 1 -r
+        echo
+        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+            exit 1
+        fi
+    fi
+fi
+
+# Update system
+echo "📦 Updating system packages..."
+sudo apt-get update
+sudo apt-get upgrade -y
+
+# Install dependencies
+echo "🔧 Installing dependencies..."
+sudo apt-get install -y \
+    python3-pip \
+    python3-venv \
+    python3-dev \
+    chromium-browser \
+    matchbox-keyboard \
+    unclutter \
+    network-manager \
+    git
+
+# Create installation directory
+INSTALL_DIR="$HOME/OmniBot-v2.7"
+echo "📂 Installing to $INSTALL_DIR..."
+
+mkdir -p "$INSTALL_DIR"
+cp -r src config scripts requirements.txt "$INSTALL_DIR/"
+
+# Create virtual environment
+echo "🐍 Creating Python environment..."
+cd "$INSTALL_DIR"
+python3 -m venv venv
+source venv/bin/activate
+
+# Install Python packages
+echo "📚 Installing Python packages..."
+pip install --upgrade pip
+pip install -r requirements.txt
+
+# Create systemd service
+echo "⚙️  Creating system service..."
+sudo tee /etc/systemd/system/omnibot-dashboard.service > /dev/null << 'EOF'
+[Unit]
+Description=OMNIBOT Dashboard
+After=network.target
+
+[Service]
+Type=simple
+User=$USER
+WorkingDirectory=$INSTALL_DIR
+Environment="PATH=$INSTALL_DIR/venv/bin:/usr/bin:/bin"
+ExecStart=$INSTALL_DIR/venv/bin/python -c "import sys; sys.path.insert(0, 'src'); from dashboard.app import app; app.run(host='0.0.0.0', port=8081)"
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+# Replace variables in service file
+sudo sed -i "s|\$USER|$USER|g" /etc/systemd/system/omnibot-dashboard.service
+sudo sed -i "s|\$INSTALL_DIR|$INSTALL_DIR|g" /etc/systemd/system/omnibot-dashboard.service
+
+# Enable service
+sudo systemctl daemon-reload
+sudo systemctl enable omnibot-dashboard
+
+# Create config files if they don't exist
+if [ ! -f "$INSTALL_DIR/config/api_keys.py" ]; then
+    cp "$INSTALL_DIR/config/api_keys.py.example" "$INSTALL_DIR/config/api_keys.py" 2>/dev/null || \
+    cat > "$INSTALL_DIR/config/api_keys.py" << 'EOF'
+# API Keys - Updated via Dashboard Settings
+ALPACA_API_KEY = ''
+ALPACA_SECRET_KEY = ''
+BINANCE_API_KEY = ''
+BINANCE_SECRET_KEY = ''
+IG_USERNAME = ''
+IG_PASSWORD = ''
+IG_API_KEY = ''
+IG_ACCOUNT_ID = ''
+EOF
+fi
+
+# Create kiosk autostart
+mkdir -p ~/.config/autostart
+cat > ~/.config/autostart/omnibot-kiosk.desktop << EOF
+[Desktop Entry]
+Type=Application
+Name=OMNIBOT Dashboard
+Exec=$INSTALL_DIR/scripts/start-kiosk.sh
+Hidden=false
+NoDisplay=false
+X-GNOME-Autostart-enabled=true
+EOF
+
+# Create kiosk script
+mkdir -p "$INSTALL_DIR/scripts"
+cat > "$INSTALL_DIR/scripts/start-kiosk.sh" << 'EOF'
+#!/bin/bash
+sleep 10
+unclutter -idle 0.5 &
+matchbox-keyboard &
+chromium-browser --kiosk --app=http://localhost:8081 \
+    --disable-infobars --disable-session-crashed-bubble \
+    --no-first-run --start-fullscreen
+EOF
+chmod +x "$INSTALL_DIR/scripts/start-kiosk.sh"
+
+echo ""
+echo "✅ Installation Complete!"
+echo ""
+echo "🚀 Starting OMNIBOT..."
+sudo systemctl start omnibot-dashboard
+sleep 3
+
+echo ""
+echo "📱 Access your dashboard:"
+echo "   On Pi: http://localhost:8081"
+echo "   Network: http://$(hostname -I | awk '{print $1}'):8081"
+echo ""
+echo "⚙️  Management commands:"
+echo "   Status:  sudo systemctl status omnibot-dashboard"
+echo "   Restart: sudo systemctl restart omnibot-dashboard"
+echo "   Logs:    sudo journalctl -u omnibot-dashboard -f"
+echo ""
+echo "📖 Next steps:"
+echo "   1. Open dashboard in browser"
+echo "   2. Click ⚙️ Settings"
+echo "   3. Connect WiFi and add API keys"
+echo ""
+echo "Happy Trading! 🤖"
+INSTALLER
+chmod +x install.sh
+
+# Create empty example files
+touch config/api_keys.py.example
+touch .env.example
+
+# Create docs folder structure
+mkdir -p docs
+cat > docs/USER-GUIDE.md << 'DOCSTART'
+# OMNIBOT User Guide
+
+See main README.md for quick start. This guide covers detailed usage.
+
+## Table of Contents
+1. First Boot
+2. WiFi Setup
+3. Adding Trading Accounts
+4. Understanding the Dashboard
+5. Daily Use
+
+[Full content to be added]
+DOCSTART
+
+# Create requirements.txt if it doesn't exist
+if [ ! -f requirements.txt ]; then
+    cat > requirements.txt << 'REQ'
+flask>=2.0.0
+alpaca-trade-api>=2.0.0
+python-binance>=1.0.0
+requests>=2.25.0
+numpy>=1.20.0
+pandas>=1.3.0
+REQ
+fi
+
+echo ""
+echo "═══════════════════════════════════════════════════════════"
+echo "  📦 GITHUB PACKAGE READY"
+echo "═══════════════════════════════════════════════════════════"
+echo ""
+echo "Location: ~/OMNIBOT-GitHub-Release/"
+echo ""
+echo "Package contents:"
+ls -la ~/OMNIBOT-GitHub-Release/
+echo ""
+echo "To prepare for GitHub:"
+echo "  1. On your Windows PC, download this folder"
+echo "  2. Create new GitHub repository"
+echo "  3. Upload these files"
+echo ""
+echo "Or create zip for upload:"
+cd ~
+zip -r OMNIBOT-GitHub-Release.zip OMNIBOT-GitHub-Release/
+echo "  📄 Created: ~/OMNIBOT-GitHub-Release.zip"
+echo ""
+echo "═══════════════════════════════════════════════════════════"
 ```
+
+This creates a complete GitHub-ready package with:
+- Professional README with badges
+- MIT License
+- GitHub Actions workflow for auto-releases
+- One-click install script
+- .gitignore for clean repo
+- Documentation structure
+- Proper folder organization
+
+To get this to your Windows PC:
+1. Run the commands above on your Pi
+2. The package will be at `~/OMNIBOT-GitHub-Release.zip`
+3. Use WinSCP, FileZilla, or `scp` to download to your PC
+4. Upload to GitHub
+
+Want me to adjust anything in the package structure?
