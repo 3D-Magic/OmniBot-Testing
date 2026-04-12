@@ -144,4 +144,4 @@ sudo systemctl restart omnibot-dashboard
 
 ## License
 
-MIT License - See LICENSE file
+Personal Use License - See LICENSE file
