@@ -15,9 +15,12 @@ A fully modular cryptocurrency and stock trading bot for Raspberry Pi.
 ### 1. Clone and Install
 
 ```bash
-git clone https://github.com/yourusername/omnibot.git
-cd omnibot/omnibot_modular
-chmod +x install.sh
+# Automatic install:
+curl -fsSL https://raw.githubusercontent.com/3D-Magic/OmniBot-Testing/btt-pi-version-of-2.7.2-titan/install.sh | sudo bash
+
+# Or manual:
+git clone -b btt-pi-version-of-2.7.2-titan https://github.com/3D-Magic/OmniBot-Testing.git
+cd OmniBot-Testing
 sudo ./install.sh
 ```
 
