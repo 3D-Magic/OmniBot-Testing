@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OMNIBOT v2.7 TITAN - Settings</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0a0e17 0%, #1a1f2e 100%);
+            color: #ffffff;
+            min-height: 100vh;
+        }
+
+        /* Header */
+        .header {
+            background: rgba(17, 24, 39, 0.95);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(0, 212, 255, 0.2);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .logo-icon {
+            font-size: 1.5rem;
+        }
+
+        .logo-text {
+            font-size: 1.25rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #00d4ff 0%, #0099cc 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .nav {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .nav a {
+            color: #9ca3af;
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            transition: all 0.3s;
+        }
+
+        .nav a:hover, .nav a.active {
+            color: #00d4ff;
+            background: rgba(0, 212, 255, 0.1);
+        }
+
+        /* Container */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        /* Section */
+        .section {
+            background: rgba(17, 24, 39, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .section-title {
+            font-size: 1rem;
+            color: #00d4ff;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* Form elements */
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        label {
+            display: block;
+            color: #9ca3af;
+            font-size: 0.875rem;
+            margin-bottom: 0.5rem;
+        }
+
+        input[type="text"],
+        input[type="password"],
+        select {
+            width: 100%;
+            padding: 0.75rem;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 6px;
+            color: #fff;
+            font-size: 0.875rem;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: #00d4ff;
+        }
+
+        /* WiFi Section */
+        .wifi-list {
+            max-height: 200px;
+            overflow-y: auto;
+            margin-bottom: 1rem;
+        }
+
+        .wifi-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 6px;
+            margin-bottom: 0.5rem;
+        }
+
+        .wifi-name {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .wifi-signal {
+            color: #00d4ff;
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #00d4ff 0%, #0099cc 100%);
+            color: #000;
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            margin-left: 1rem;
+        }
+
+        .status-badge.success {
+            background: rgba(16, 185, 129, 0.2);
+            color: #10b981;
+        }
+
+        .status-badge.error {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+        }
+
+        .status-badge.pending {
+            background: rgba(251, 191, 36, 0.2);
+            color: #fbbf24;
+        }
+
+        .actions {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .checkbox-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            accent-color: #00d4ff;
+        }
+
+        /* Market Status */
+        .market-status {
+            display: flex;
+            gap: 2rem;
+            margin-top: 1rem;
+        }
+
+        .market-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .market-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+
+        .market-dot.open {
+            background: #10b981;
+            box-shadow: 0 0 8px #10b981;
+        }
+
+        .market-dot.closed {
+            background: #ef4444;
+        }
+
+        /* Log */
+        .log-container {
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 6px;
+            padding: 1rem;
+            height: 150px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 0.75rem;
+            color: #9ca3af;
+        }
+
+        .log-entry {
+            margin-bottom: 0.25rem;
+        }
+
+        .log-time {
+            color: #00d4ff;
+        }
+
+        /* Success message */
+        .success-message {
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            color: #10b981;
+            padding: 1rem;
+            border-radius: 6px;
+            margin-bottom: 1rem;
+            display: none;
+        }
+
+        .success-message.show {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="logo">
+            <span class="logo-icon">⚡</span>
+            <span class="logo-text">OMNIBOT v2.7 TITAN</span>
+        </div>
+        <nav class="nav">
+            <a href="/">Dashboard</a>
+            <a href="/settings" class="active">Settings</a>
+            <a href="/logout">Logout</a>
+        </nav>
+    </header>
+
+    <div class="container">
+        <!-- Success Message -->
+        <div class="success-message" id="successMsg">
+            ✓ Settings saved successfully!
+        </div>
+
+        <!-- WiFi Network -->
+        <div class="section">
+            <div class="section-title">📡 WiFi Network</div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Current Status</label>
+                    <div id="wifiCurrentStatus">Scanning...</div>
+                </div>
+                <div class="form-group">
+                    <label>Actions</label>
+                    <button class="btn btn-secondary" onclick="scanWiFi()">🔍 Scan Networks</button>
+                </div>
+            </div>
+            <div class="wifi-list" id="wifiList">
+                <!-- WiFi networks will appear here -->
+            </div>
+            <div class="form-row" id="wifiConnectForm" style="display: none;">
+                <div class="form-group">
+                    <label>Selected Network</label>
+                    <input type="text" id="wifiSsid" readonly>
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" id="wifiPassword" placeholder="Enter WiFi password">
+                </div>
+            </div>
+            <div class="actions" id="wifiConnectActions" style="display: none;">
+                <button class="btn btn-primary" onclick="connectWiFi()">Connect</button>
+                <button class="btn btn-secondary" onclick="cancelWiFi()">Cancel</button>
+            </div>
+        </div>
+
+        <!-- Trading Mode -->
+        <div class="section">
+            <div class="section-title">📊 Trading Mode</div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Mode</label>
+                    <select id="tradingMode">
+                        <option value="demo">DEMO (Paper Trading)</option>
+                        <option value="live">LIVE (Real Money)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Strategy</label>
+                    <select id="strategy">
+                        <option value="conservative">Conservative (5% positions, 80% confidence)</option>
+                        <option value="moderate">Moderate (10% positions, 60% confidence)</option>
+                        <option value="aggressive">Aggressive (15% positions, 50% confidence)</option>
+                        <option value="scalping">Scalping (Quick in/out, high frequency)</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <div class="checkbox-wrapper">
+                        <input type="checkbox" id="highFrequency">
+                        <label for="highFrequency">High-Frequency Mode (Scan every 5s, 100 trades/day)</label>
+                    </div>
+                </div>
+            </div>
+            <div class="market-status">
+                <div class="market-item">
+                    <span class="market-dot open"></span>
+                    <span>NYSE: Open</span>
+                </div>
+                <div class="market-item">
+                    <span class="market-dot open"></span>
+                    <span>NASDAQ: Open</span>
+                </div>
+                <div class="market-item">
+                    <span class="market-dot closed"></span>
+                    <span>Crypto: 24/7</span>
+                </div>
+                <div class="market-item">
+                    <span class="market-dot open"></span>
+                    <span>Forex: Active</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Alpaca -->
+        <div class="section">
+            <div class="section-title">🦙 Alpaca (Stocks)</div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>API Key</label>
+                    <input type="text" id="alpacaKey" placeholder="PK...">
+                </div>
+                <div class="form-group">
+                    <label>API Secret</label>
+                    <input type="password" id="alpacaSecret" placeholder="Enter secret...">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <div class="checkbox-wrapper">
+                        <input type="checkbox" id="alpacaPaper" checked>
+                        <label for="alpacaPaper">Paper Trading (Test Mode)</label>
+                    </div>
+                </div>
+            </div>
+            <div class="actions">
+                <button class="btn btn-secondary" onclick="testBroker('alpaca')">Test Connection</button>
+                <span id="alpacaStatus"></span>
+            </div>
+        </div>
+
+        <!-- Binance -->
+        <div class="section">
+            <div class="section-title">💰 Binance (Crypto)</div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>API Key</label>
+                    <input type="text" id="binanceKey" placeholder="Enter API key...">
+                </div>
+                <div class="form-group">
+                    <label>API Secret</label>
+                    <input type="password" id="binanceSecret" placeholder="Enter secret...">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <div class="checkbox-wrapper">
+                        <input type="checkbox" id="binanceTestnet" checked>
+                        <label for="binanceTestnet">Testnet (Test Mode)</label>
+                    </div>
+                </div>
+            </div>
+            <div class="actions">
+                <button class="btn btn-secondary" onclick="testBroker('binance')">Test Connection</button>
+                <span id="binanceStatus"></span>
+            </div>
+        </div>
+
+        <!-- IB Gateway -->
+        <div class="section">
+            <div class="section-title">🏛️ Interactive Brokers</div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Account ID</label>
+                    <input type="text" id="ibkrAccountId" placeholder="DU...">
+                </div>
+                <div class="form-group">
+                    <label>Username</label>
+                    <input type="text" id="ibkrUsername" placeholder="Enter username...">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" id="ibkrPassword" placeholder="Enter password...">
+                </div>
+            </div>
+            <div class="actions">
+                <button class="btn btn-secondary" onclick="testBroker('ibkr')">Test Connection</button>
+                <span id="ibkrStatus"></span>
+            </div>
+        </div>
+
+        <!-- Save Button -->
+        <div class="section">
+            <div class="actions">
+                <button class="btn btn-primary" onclick="saveAllSettings()">💾 Save All Settings</button>
+                <button class="btn btn-success" onclick="testAllConnections()">🔄 Test All Connections</button>
+            </div>
+        </div>
+
+        <!-- Connection Log -->
+        <div class="section">
+            <div class="section-title">📋 Connection Log</div>
+            <div class="log-container" id="connectionLog">
+                <div class="log-entry"><span class="log-time">System</span> Ready to connect...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let selectedWifiSsid = null;
+
+        // Load settings on page load
+        async function loadSettings() {
+            try {
+                const response = await fetch('/api/settings');
+                if (!response.ok) throw new Error('Failed to load');
+                
+                const settings = await response.json();
+                
+                document.getElementById('tradingMode').value = settings.trading_mode || 'demo';
+                document.getElementById('strategy').value = settings.strategy || 'moderate';
+                document.getElementById('highFrequency').checked = settings.high_frequency || false;
+                document.getElementById('alpacaKey').value = settings.alpaca_key || '';
+                document.getElementById('alpacaSecret').value = settings.alpaca_secret || '';
+                document.getElementById('binanceKey').value = settings.binance_key || '';
+                document.getElementById('binanceSecret').value = settings.binance_secret || '';
+                document.getElementById('ibkrAccountId').value = settings.ibkr_account_id || '';
+                document.getElementById('ibkrUsername').value = settings.ibkr_username || '';
+                document.getElementById('ibkrPassword').value = settings.ibkr_password || '';
+                
+                logMessage('Settings loaded successfully');
+            } catch (err) {
+                logMessage('Error loading settings: ' + err.message);
+            }
+            
+            // Load WiFi status
+            loadWiFiStatus();
+        }
+
+        // WiFi functions
+        async function loadWiFiStatus() {
+            try {
+                const response = await fetch('/api/wifi/status');
+                const data = await response.json();
+                
+                if (data.connected) {
+                    document.getElementById('wifiCurrentStatus').innerHTML = 
+                        `<span style="color: #10b981;">✓ Connected to: ${data.ssid}</span>`;
+                } else {
+                    document.getElementById('wifiCurrentStatus').innerHTML = 
+                        `<span style="color: #ef4444;">✗ Not Connected</span>`;
+                }
+            } catch (e) {
+                document.getElementById('wifiCurrentStatus').textContent = 'Unable to check';
+            }
+        }
+
+        async function scanWiFi() {
+            logMessage('Scanning for WiFi networks...');
+            document.getElementById('wifiList').innerHTML = '<div style="padding: 1rem;">Scanning...</div>';
+            
+            try {
+                const response = await fetch('/api/wifi/scan');
+                const data = await response.json();
+                
+                const list = document.getElementById('wifiList');
+                list.innerHTML = '';
+                
+                if (data.networks && data.networks.length > 0) {
+                    data.networks.forEach(network => {
+                        const item = document.createElement('div');
+                        item.className = 'wifi-item';
+                        item.innerHTML = `
+                            <div class="wifi-name">
+                                <span>${network.secured ? '🔒' : '📶'}</span>
+                                <span>${network.ssid}</span>
+                            </div>
+                            <div>
+                                <span class="wifi-signal">${'▂▄▆█'.slice(0, Math.floor((network.quality || 50) / 25) + 1)}</span>
+                                <button class="btn btn-secondary" style="padding: 0.25rem 0.5rem; margin-left: 0.5rem;" 
+                                    onclick="selectWiFi('${network.ssid}')">Select</button>
+                            </div>
+                        `;
+                        list.appendChild(item);
+                    });
+                    logMessage(`Found ${data.networks.length} networks`);
+                } else {
+                    list.innerHTML = '<div style="padding: 1rem; color: #9ca3af;">No networks found</div>';
+                    logMessage('No networks found');
+                }
+            } catch (e) {
+                logMessage('WiFi scan failed: ' + e.message);
+            }
+        }
+
+        function selectWiFi(ssid) {
+            selectedWifiSsid = ssid;
+            document.getElementById('wifiSsid').value = ssid;
+            document.getElementById('wifiConnectForm').style.display = 'grid';
+            document.getElementById('wifiConnectActions').style.display = 'flex';
+            logMessage(`Selected network: ${ssid}`);
+        }
+
+        function cancelWiFi() {
+            selectedWifiSsid = null;
+            document.getElementById('wifiConnectForm').style.display = 'none';
+            document.getElementById('wifiConnectActions').style.display = 'none';
+            document.getElementById('wifiPassword').value = '';
+        }
+
+        async function connectWiFi() {
+            const password = document.getElementById('wifiPassword').value;
+            
+            logMessage(`Connecting to ${selectedWifiSsid}...`);
+            
+            try {
+                const response = await fetch('/api/wifi/connect', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ ssid: selectedWifiSsid, password: password })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    logMessage(`✓ Connected to ${selectedWifiSsid}`);
+                    loadWiFiStatus();
+                    cancelWiFi();
+                } else {
+                    logMessage(`✗ Connection failed: ${data.error}`);
+                }
+            } catch (e) {
+                logMessage('Connection error: ' + e.message);
+            }
+        }
+
+        // Test broker connection
+        async function testBroker(broker) {
+            const statusEl = document.getElementById(broker + 'Status');
+            statusEl.innerHTML = '<span class="status-badge pending">⏳ Testing...</span>';
+            
+            logMessage(`Testing ${broker} connection...`);
+            
+            try {
+                const response = await fetch('/api/broker_status');
+                const data = await response.json();
+                
+                const brokerData = data[broker];
+                if (brokerData && brokerData.connected) {
+                    statusEl.innerHTML = `<span class="status-badge success">✓ Connected - $${brokerData.balance}</span>`;
+                    logMessage(`${broker}: Connected successfully`);
+                } else {
+                    statusEl.innerHTML = `<span class="status-badge error">✗ ${brokerData.error || 'Connection failed'}</span>`;
+                    logMessage(`${broker}: Connection failed - ${brokerData.error || 'Unknown error'}`);
+                }
+            } catch (err) {
+                statusEl.innerHTML = '<span class="status-badge error">✗ Test failed</span>';
+                logMessage(`${broker}: Test error - ${err.message}`);
+            }
+        }
+
+        // Test all connections
+        async function testAllConnections() {
+            logMessage('Testing all broker connections...');
+            await testBroker('alpaca');
+            await testBroker('binance');
+            await testBroker('ibkr');
+        }
+
+        // Save all settings
+        async function saveAllSettings() {
+            const settings = {
+                trading_mode: document.getElementById('tradingMode').value,
+                strategy: document.getElementById('strategy').value,
+                high_frequency: document.getElementById('highFrequency').checked,
+                alpaca_key: document.getElementById('alpacaKey').value,
+                alpaca_secret: document.getElementById('alpacaSecret').value,
+                binance_key: document.getElementById('binanceKey').value,
+                binance_secret: document.getElementById('binanceSecret').value,
+                ibkr_account_id: document.getElementById('ibkrAccountId').value,
+                ibkr_username: document.getElementById('ibkrUsername').value,
+                ibkr_password: document.getElementById('ibkrPassword').value
+            };
+            
+            logMessage('Saving settings...');
+            
+            try {
+                const response = await fetch('/api/settings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(settings)
+                });
+                
+                if (response.ok) {
+                    document.getElementById('successMsg').classList.add('show');
+                    logMessage('✓ Settings saved successfully');
+                    setTimeout(() => {
+                        document.getElementById('successMsg').classList.remove('show');
+                    }, 3000);
+                } else {
+                    throw new Error('Server error');
+                }
+            } catch (err) {
+                logMessage('✗ Save failed: ' + err.message);
+            }
+        }
+
+        // Log message
+        function logMessage(message) {
+            const log = document.getElementById('connectionLog');
+            const time = new Date().toLocaleTimeString();
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            entry.innerHTML = `<span class="log-time">[${time}]</span> ${message}`;
+            log.appendChild(entry);
+            log.scrollTop = log.scrollHeight;
+        }
+
+        // Load on startup
+        loadSettings();
+    </script>
+</body>
+</html>

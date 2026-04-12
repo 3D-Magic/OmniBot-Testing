@@ -1,88 +1,110 @@
 """
-OMNIBOT v2.7 Titan - Configuration
-Edit this file with your API keys or use: python src/main.py --setup
+Settings Manager
+Handles loading and saving of application settings
 """
 
+import json
 import os
-from enum import Enum
+import logging
+from .constants import SETTINGS_FILE, DEFAULT_SETTINGS
 
-# Version
-VERSION = "v2.7.0-titan"
+logger = logging.getLogger(__name__)
 
-# === TRADING MODES ===
-class TradingMode(Enum):
-    CONSERVATIVE = "conservative"
-    MODERATE = "moderate"
-    AGGRESSIVE = "aggressive"
-    HFT = "hft"
-    SENTINEL = "sentinel"
 
-# === ALPACA (Stocks) - REQUIRED ===
-ALPACA = {
-    "api_key": os.getenv("ALPACA_API_KEY", "YOUR_ALPACA_API_KEY_HERE"),
-    "secret_key": os.getenv("ALPACA_SECRET_KEY", "YOUR_ALPACA_SECRET_KEY_HERE"),
-    "paper": True,  # Set to False for live trading
-    "base_url": "https://paper-api.alpaca.markets",
-    "enabled": True
-}
-
-# === CRYPTO (Binance/others) - OPTIONAL ===
-CRYPTO = {
-    "enabled": False,  # Set to True to enable crypto trading
-    "exchange": "binance",  # binance, coinbase, kraken, kucoin, etc.
-    "api_key": os.getenv("CRYPTO_API_KEY", "YOUR_CRYPTO_API_KEY_HERE"),
-    "secret": os.getenv("CRYPTO_SECRET", "YOUR_CRYPTO_SECRET_HERE"),
-    "testnet": True,  # Use testnet first!
-    "sandbox": True,
-    "symbols": ["BTC-USD", "ETH-USD", "SOL-USD", "ADA-USD"]
-}
-
-# === FOREX (OANDA) - OPTIONAL ===
-FOREX = {
-    "enabled": False,  # Set to True to enable forex trading
-    "account_id": os.getenv("OANDA_ACCOUNT_ID", "YOUR_OANDA_ACCOUNT_ID"),
-    "access_token": os.getenv("OANDA_ACCESS_TOKEN", "YOUR_OANDA_ACCESS_TOKEN"),
-    "environment": "practice",  # "practice" or "live"
-    "base_url": "https://api-fxpractice.oanda.com",
-    "symbols": ["EUR_USD", "GBP_USD", "USD_JPY", "AUD_USD"]
-}
-
-# === TRADING SETTINGS ===
-TRADING = {
-    "mode": TradingMode.MODERATE,
-    "initial_capital": 10000.0,
-    "risk_per_trade": 0.02,  # 2% risk per trade
-    "max_positions": 10,
-    "watchlist": ["AAPL", "MSFT", "GOOGL", "AMZN", "TSLA", "NVDA", "META"],
-    "timeframes": ["1m", "5m", "15m", "1h", "4h", "1d"]
-}
-
-# === AUTO-UPDATER ===
-AUTO_UPDATER = {
-    "enabled": True,
-    "check_interval_hours": 24,
-    "auto_install": True,
-    "backup_before_update": True,
-    "update_on_weekend": True,
-    "update_time": "02:00",
-    "rollback_on_failure": True,
-    "version_url": "https://api.github.com/repos/3D-Magic/OmniBot-Testing/releases/latest",
-    "repo_url": "https://github.com/3D-Magic/OmniBot-Testing.git"
-}
-
-# === EXTERNAL ACCESS ===
-EXTERNAL_ACCESS = {
-    "enabled": True,
-    "use_ngrok": False,
-    "use_tailscale": True,
-    "use_cloudflare": False,
-    "custom_domain": None
-}
-
-# === DASHBOARD ===
-DASHBOARD = {
-    "host": "0.0.0.0",
-    "port": 8081,
-    "password": "admin",  # Change with: python src/main.py --change-password
-    "debug": False
-}
+class Settings:
+    """Settings manager with file persistence"""
+    
+    def __init__(self, filepath=None):
+        self.filepath = filepath or SETTINGS_FILE
+        self._cache = None
+        self._load()
+    
+    def _load(self):
+        """Load settings from file"""
+        try:
+            if os.path.exists(self.filepath):
+                with open(self.filepath, 'r') as f:
+                    loaded = json.load(f)
+                    # Merge with defaults
+                    self._cache = DEFAULT_SETTINGS.copy()
+                    self._cache.update(loaded)
+            else:
+                self._cache = DEFAULT_SETTINGS.copy()
+        except Exception as e:
+            logger.error(f"Error loading settings: {e}")
+            self._cache = DEFAULT_SETTINGS.copy()
+    
+    def save(self):
+        """Save settings to file"""
+        try:
+            os.makedirs(os.path.dirname(self.filepath), exist_ok=True)
+            with open(self.filepath, 'w') as f:
+                json.dump(self._cache, f, indent=2)
+            return True
+        except Exception as e:
+            logger.error(f"Error saving settings: {e}")
+            return False
+    
+    def get(self, key, default=None):
+        """Get a setting value"""
+        return self._cache.get(key, default)
+    
+    def set(self, key, value):
+        """Set a setting value"""
+        # Handle password hashing
+        if key == 'password' and value:
+            import hashlib
+            self._cache['password_hash'] = hashlib.sha256(value.encode()).hexdigest()
+        
+        self._cache[key] = value
+        return self.save()
+    
+    def update(self, updates):
+        """Update multiple settings at once"""
+        self._cache.update(updates)
+        return self.save()
+    
+    def get_safe(self):
+        """Get settings with sensitive data masked"""
+        safe = self._cache.copy()
+        sensitive_keys = [
+            'alpaca_secret', 'binance_secret', 'ig_password',
+            'ibkr_password', 'paypal_client_secret'
+        ]
+        for key in sensitive_keys:
+            if safe.get(key):
+                safe[key] = '*' * 10
+        return safe
+    
+    def is_configured(self, broker):
+        """Check if a broker is configured"""
+        configs = {
+            'alpaca': ['alpaca_key', 'alpaca_secret'],
+            'binance': ['binance_key', 'binance_secret'],
+            'ig': ['ig_api_key', 'ig_username', 'ig_password'],
+            'ibkr': ['ibkr_account_id', 'ibkr_username', 'ibkr_password']
+        }
+        keys = configs.get(broker, [])
+        return all(self._cache.get(k) for k in keys)
+    
+    def verify_password(self, password: str) -> bool:
+        """Verify a password against stored hash"""
+        import hashlib
+        hashed = hashlib.sha256(password.encode()).hexdigest()
+        stored_hash = self._cache.get('password_hash')
+        stored_password = self._cache.get('password')
+        
+        return hashed == stored_hash or password == stored_password
+    
+    def change_password(self, new_password: str) -> bool:
+        """Change the login password"""
+        import hashlib
+        self._cache['password_hash'] = hashlib.sha256(new_password.encode()).hexdigest()
+        # Clear plaintext password if it exists
+        if 'password' in self._cache:
+            del self._cache['password']
+        return self.save()
+    
+    def all(self):
+        """Get all settings"""
+        return self._cache.copy()

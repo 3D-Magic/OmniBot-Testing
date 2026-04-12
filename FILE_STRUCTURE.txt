@@ -1,0 +1,76 @@
+OMNIBOT v2.7 Titan - Modular File Structure
+============================================
+
+omnibot_modular/
+├── app.py                          (164 lines) - Main entry point
+├── install.sh                      (107 lines) - One-click installer
+├── verify.py                       (201 lines) - Module verification
+├── requirements.txt                (12 lines) - Python dependencies
+├── README.md                       (104 lines) - User documentation
+├── DEPLOY.md                       (148 lines) - Deployment guide
+├── VERIFICATION_COMPLETE.md        (164 lines) - Verification checklist
+├── MODULAR_STRUCTURE.md            (186 lines) - Architecture docs
+├── FILE_STRUCTURE.txt              (This file)
+│
+├── config/                         - Configuration layer
+│   ├── __init__.py                 - Module exports
+│   ├── constants.py                (35 lines) - App constants
+│   └── settings.py                 (99 lines) - Settings management
+│
+├── brokers/                        - Broker API layer
+│   ├── __init__.py                 - Module exports
+│   ├── base_broker.py              (54 lines) - Abstract base class
+│   ├── alpaca_config.py            (113 lines) - Alpaca API wrapper
+│   ├── binance_config.py           (111 lines) - Binance API wrapper
+│   ├── ib_gateway_config.py        (135 lines) - IB Gateway wrapper
+│   └── balance_aggregator.py       (138 lines) - Balance aggregation
+│
+├── engine/                         - Trading logic layer
+│   ├── __init__.py                 - Module exports
+│   └── trading_engine.py           (223 lines) - Trading engine
+│
+├── visualization/                  - Presentation layer
+│   ├── __init__.py                 - Module exports
+│   ├── dashboard_routes.py         (263 lines) - Flask routes
+│   └── graph_plotter.py            (146 lines) - Chart generation
+│
+├── wifi/                           - Network layer
+│   ├── __init__.py                 - Module exports
+│   └── wifi_manager.py             (157 lines) - WiFi management
+│
+├── templates/                      - HTML templates
+│   ├── login.html                  (165 lines) - Login page
+│   ├── index.html                  (278 lines) - Dashboard
+│   └── settings.html               (326 lines) - Settings page
+│
+└── static/                         - Static assets
+    ├── css/                        - Stylesheets
+    └── js/                         - JavaScript files
+
+TOTAL LINES OF CODE: ~2,800
+TOTAL FILES: 27
+
+MODULE DEPENDENCIES:
+-------------------
+config (no deps)
+  ↓
+brokers (uses config)
+  ↓
+wifi (no deps)
+  ↓
+engine (uses brokers, config)
+  ↓
+visualization (uses config, brokers, wifi, engine)
+  ↓
+app.py (uses all modules)
+
+KEY FEATURES:
+-------------
+✅ Complete broker implementations (Alpaca, Binance, IB)
+✅ Password hashing with SHA256
+✅ 24-hour persistent sessions
+✅ Demo mode with $100k balance
+✅ Real balance fetching from APIs
+✅ Auto-refresh dashboard (5 second interval)
+✅ One-click install script
+✅ No placeholder code - all methods implemented

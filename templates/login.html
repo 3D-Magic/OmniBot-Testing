@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>OMNIBOT v2.7 TITAN - Login</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0a0e17 0%, #1a1f2e 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding-bottom: 320px; /* Space for keyboard */
+        }
+
+        .login-container {
+            background: rgba(17, 24, 39, 0.95);
+            padding: 2rem;
+            border-radius: 16px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            width: 90%;
+            max-width: 400px;
+            border: 1px solid rgba(0, 212, 255, 0.1);
+            margin-top: -100px;
+        }
+
+        .logo {
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .logo-icon {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .logo h1 {
+            color: #00d4ff;
+            font-size: 1.5rem;
+            font-weight: 700;
+            letter-spacing: 2px;
+        }
+
+        .logo-badge {
+            display: inline-block;
+            background: #ef4444;
+            color: white;
+            font-size: 0.625rem;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            margin-top: 0.5rem;
+        }
+
+        .logo-subtitle {
+            color: #9ca3af;
+            font-size: 0.875rem;
+            margin-top: 0.5rem;
+        }
+
+        .error-message {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #ef4444;
+            padding: 0.75rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            font-size: 0.875rem;
+            text-align: center;
+            display: none;
+        }
+
+        .error-message.show {
+            display: block;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        input[type="password"] {
+            width: 100%;
+            padding: 1rem;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(0, 212, 255, 0.2);
+            border-radius: 8px;
+            color: #fff;
+            font-size: 1.125rem;
+            text-align: center;
+            letter-spacing: 4px;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 1rem;
+            background: linear-gradient(135deg, #00d4ff 0%, #0099cc 100%);
+            border: none;
+            border-radius: 8px;
+            color: #000;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            text-transform: uppercase;
+        }
+
+        .keyboard-toggle {
+            background: rgba(0, 212, 255, 0.2);
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            color: #00d4ff;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.875rem;
+            margin-top: 1rem;
+        }
+
+        .default-login {
+            text-align: center;
+            color: #4b5563;
+            font-size: 0.75rem;
+            margin-top: 1rem;
+        }
+
+        /* On-screen Keyboard - ALWAYS VISIBLE */
+        .keyboard-overlay {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(10, 14, 23, 0.98);
+            border-top: 2px solid rgba(0, 212, 255, 0.3);
+            padding: 0.75rem;
+            z-index: 1000;
+        }
+
+        .keyboard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+            padding: 0 0.5rem;
+        }
+
+        .keyboard-title {
+            color: #00d4ff;
+            font-size: 0.875rem;
+        }
+
+        .keyboard-close {
+            color: #9ca3af;
+            cursor: pointer;
+            font-size: 0.875rem;
+        }
+
+        .keyboard-row {
+            display: flex;
+            justify-content: center;
+            gap: 0.25rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .keyboard-key {
+            min-width: 32px;
+            height: 48px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 6px;
+            color: white;
+            font-size: 1rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex: 1;
+            max-width: 50px;
+        }
+
+        .keyboard-key:hover, .keyboard-key:active {
+            background: rgba(0, 212, 255, 0.3);
+        }
+
+        .keyboard-key.wide {
+            max-width: 80px;
+            flex: 2;
+        }
+
+        .keyboard-key.enter {
+            background: linear-gradient(135deg, #00d4ff 0%, #0099cc 100%);
+            color: #000;
+            font-weight: 700;
+            max-width: 100px;
+            flex: 3;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="logo">
+            <div class="logo-icon">⚡</div>
+            <h1>OMNIBOT</h1>
+            <div class="logo-badge">v2.7 TITAN</div>
+            <div class="logo-subtitle">Modular Edition</div>
+        </div>
+        
+        <div class="error-message" id="errorMsg">Invalid password</div>
+        
+        <form id="loginForm">
+            <div class="form-group">
+                <input type="password" id="password" placeholder="Enter password..." readonly>
+            </div>
+            
+            <button type="submit" class="btn" id="loginBtn">LOGIN</button>
+            
+            <div style="text-align: center;">
+                <button type="button" class="keyboard-toggle" onclick="toggleKeyboard()">⌨️ Hide Keyboard</button>
+            </div>
+        </form>
+        
+        <div class="default-login">Default: admin / admin</div>
+    </div>
+
+    <!-- On-screen Keyboard for Raspberry Pi - VISIBLE BY DEFAULT -->
+    <div class="keyboard-overlay" id="keyboard">
+        <div class="keyboard-header">
+            <span class="keyboard-title">🔐 On-Screen Keyboard</span>
+            <span class="keyboard-close" onclick="clearPassword()">Clear</span>
+        </div>
+        <div class="keyboard-row">
+            <div class="keyboard-key" onclick="typeChar('1')">1</div>
+            <div class="keyboard-key" onclick="typeChar('2')">2</div>
+            <div class="keyboard-key" onclick="typeChar('3')">3</div>
+            <div class="keyboard-key" onclick="typeChar('4')">4</div>
+            <div class="keyboard-key" onclick="typeChar('5')">5</div>
+            <div class="keyboard-key" onclick="typeChar('6')">6</div>
+            <div class="keyboard-key" onclick="typeChar('7')">7</div>
+            <div class="keyboard-key" onclick="typeChar('8')">8</div>
+            <div class="keyboard-key" onclick="typeChar('9')">9</div>
+            <div class="keyboard-key" onclick="typeChar('0')">0</div>
+        </div>
+        <div class="keyboard-row">
+            <div class="keyboard-key" onclick="typeChar('q')">q</div>
+            <div class="keyboard-key" onclick="typeChar('w')">w</div>
+            <div class="keyboard-key" onclick="typeChar('e')">e</div>
+            <div class="keyboard-key" onclick="typeChar('r')">r</div>
+            <div class="keyboard-key" onclick="typeChar('t')">t</div>
+            <div class="keyboard-key" onclick="typeChar('y')">y</div>
+            <div class="keyboard-key" onclick="typeChar('u')">u</div>
+            <div class="keyboard-key" onclick="typeChar('i')">i</div>
+            <div class="keyboard-key" onclick="typeChar('o')">o</div>
+            <div class="keyboard-key" onclick="typeChar('p')">p</div>
+        </div>
+        <div class="keyboard-row">
+            <div class="keyboard-key" onclick="typeChar('a')">a</div>
+            <div class="keyboard-key" onclick="typeChar('s')">s</div>
+            <div class="keyboard-key" onclick="typeChar('d')">d</div>
+            <div class="keyboard-key" onclick="typeChar('f')">f</div>
+            <div class="keyboard-key" onclick="typeChar('g')">g</div>
+            <div class="keyboard-key" onclick="typeChar('h')">h</div>
+            <div class="keyboard-key" onclick="typeChar('j')">j</div>
+            <div class="keyboard-key" onclick="typeChar('k')">k</div>
+            <div class="keyboard-key" onclick="typeChar('l')">l</div>
+        </div>
+        <div class="keyboard-row">
+            <div class="keyboard-key wide" onclick="typeChar('z')">z</div>
+            <div class="keyboard-key" onclick="typeChar('x')">x</div>
+            <div class="keyboard-key" onclick="typeChar('c')">c</div>
+            <div class="keyboard-key" onclick="typeChar('v')">v</div>
+            <div class="keyboard-key" onclick="typeChar('b')">b</div>
+            <div class="keyboard-key" onclick="typeChar('n')">n</div>
+            <div class="keyboard-key" onclick="typeChar('m')">m</div>
+            <div class="keyboard-key wide" onclick="backspace()">⌫</div>
+        </div>
+        <div class="keyboard-row">
+            <div class="keyboard-key wide" onclick="typeChar('.')">.</div>
+            <div class="keyboard-key" style="flex: 4; max-width: 200px;" onclick="typeChar(' ')">Space</div>
+            <div class="keyboard-key enter" onclick="submitForm()">⏎ Enter</div>
+        </div>
+    </div>
+
+    <script>
+        function typeChar(char) {
+            const pwd = document.getElementById('password');
+            pwd.value += char;
+        }
+
+        function backspace() {
+            const pwd = document.getElementById('password');
+            pwd.value = pwd.value.slice(0, -1);
+        }
+
+        function clearPassword() {
+            document.getElementById('password').value = '';
+        }
+
+        function submitForm() {
+            document.getElementById('loginForm').dispatchEvent(new Event('submit'));
+        }
+
+        function toggleKeyboard() {
+            const kb = document.getElementById('keyboard');
+            const btn = document.querySelector('.keyboard-toggle');
+            if (kb.style.display === 'none') {
+                kb.style.display = 'block';
+                btn.textContent = '⌨️ Hide Keyboard';
+            } else {
+                kb.style.display = 'none';
+                btn.textContent = '⌨️ Show Keyboard';
+            }
+        }
+
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const password = document.getElementById('password').value;
+            const btn = document.getElementById('loginBtn');
+            btn.disabled = true;
+            btn.textContent = 'Logging in...';
+
+            try {
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({password})
+                });
+                
+                if (response.ok) {
+                    window.location.href = '/';
+                } else {
+                    document.getElementById('errorMsg').classList.add('show');
+                    btn.disabled = false;
+                    btn.textContent = 'LOGIN';
+                }
+            } catch (err) {
+                btn.disabled = false;
+                btn.textContent = 'LOGIN';
+            }
+        });
+    </script>
+</body>
+</html>
