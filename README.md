@@ -4,8 +4,6 @@ A fully functional, multi-broker trading bot for Raspberry Pi 5 with a modern we
 
 ## Features
 
-<img width="1607" height="753" alt="image" src="https://github.com/user-attachments/assets/86cb5841-34e9-40fd-afa2-72f9547a0f82" />
-
 ### Trading Features
 - **7 Selectable Trading Strategies**:
   - Scalping (1-5 min, high frequency)
@@ -338,7 +336,7 @@ sudo /opt/omnibot/uninstall.sh
 
 ## License
 
-Personal Use License - See LICENSE file for details
+MIT License - See LICENSE file for details
 
 ## Support
 
