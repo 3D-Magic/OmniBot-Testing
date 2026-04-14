@@ -4,6 +4,8 @@ A fully functional, multi-broker trading bot for Raspberry Pi 5 with a modern we
 
 ## Features
 
+<img width="1607" height="753" alt="dashboard-preview" src="https://github.com/user-attachments/assets/bfa95307-b6a4-47e3-8ea2-dfbede5e7b2e" />
+
 ### Trading Features
 - **7 Selectable Trading Strategies**:
   - Scalping (1-5 min, high frequency)
