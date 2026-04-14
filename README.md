@@ -338,7 +338,7 @@ sudo /opt/omnibot/uninstall.sh
 
 ## License
 
-MIT License - See LICENSE file for details
+Personal Use License - See LICENSE file for details
 
 ## Support
 
