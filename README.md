@@ -50,10 +50,8 @@ A fully functional, multi-broker trading bot for Raspberry Pi 5 with a modern we
 ### Raspberry Pi 5 (Debian Trixie)
 
 ```bash
-# Download the install script
+# Download and run the installer
 curl -fsSL https://raw.githubusercontent.com/3D-Magic/OmniBot-Testing/Omnibot-v2.7.2-Titan/install_pi.sh -o install_pi.sh
-
-# Run the installer
 sudo bash install_pi.sh
 ```
 
