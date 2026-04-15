@@ -8,7 +8,7 @@
 
 OMNIBOT TITAN is a complete trading system that supports multiple brokers (Alpaca, Binance, PayPal) with real order execution, a beautiful web dashboard, and touch keyboard support for Raspberry Pi displays.
 
-![Dashboard Preview](docs/images/dashboard-preview.png)
+![Dashboard Preview](<img width="1263" height="903" alt="image" src="https://github.com/user-attachments/assets/cbebb0d2-ccf3-418a-bf7e-1228670f7a49" />)
 
 ## ✨ Features
 
