@@ -1,23 +1,19 @@
-# Core Framework
-flask>=2.3.0
-flask-socketio>=5.3.0
-flask-session>=0.5.0
-python-socketio>=5.8.0
+# OMNIBOT TITAN v2.7.2 - Python Dependencies
+# Install with: pip install -r requirements.txt
+
+# Web Framework
+flask==3.0.0
+flask-socketio==5.3.0
+eventlet==0.33.3
 
 # Trading APIs
-alpaca-py>=0.8.0
-python-binance>=1.0.17
-paypalrestsdk>=1.13.0
-ib-insync>=0.9.70
+alpaca-py==0.15.0
+python-binance==1.0.19
 
-# Data & Analysis
-pandas>=2.0.0
-numpy>=1.24.0
+# HTTP Client
+requests==2.31.0
+websocket-client==1.6.0
 
-# Utilities
-requests>=2.31.0
-python-dotenv>=1.0.0
-
-# Production
-gunicorn>=21.0.0
-eventlet>=0.33.0
+# Display (install via apt on Raspberry Pi)
+# python3-pyqt5
+# python3-pyqt5.qtwebengine

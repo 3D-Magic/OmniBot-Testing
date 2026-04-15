@@ -1,699 +1,219 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OMNIBOT v2.7.2 - Settings</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        :root {
-            --bg-primary: #0a0a0f;
-            --bg-sidebar: #0d0d12;
-            --bg-card: #15151c;
-            --text-primary: #ffffff;
-            --text-secondary: #8b8b9a;
-            --accent-cyan: #00d4ff;
-            --accent-green: #00ff88;
-            --accent-red: #ff4757;
-            --border-color: #1e1e28;
-        }
-        
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: var(--bg-primary);
-            color: var(--text-primary);
-            min-height: 100vh;
-            display: flex;
-        }
-        
-        /* Sidebar */
-        .sidebar {
-            width: 240px;
-            background: var(--bg-sidebar);
-            border-right: 1px solid var(--border-color);
-            display: flex;
-            flex-direction: column;
-            padding: 24px 16px;
-        }
-        
-        .logo {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            margin-bottom: 4px;
-        }
-        
-        .logo-icon {
-            width: 40px;
-            height: 40px;
-            background: linear-gradient(135deg, #6366f1, #8b5cf6);
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.3em;
-        }
-        
-        .logo-text h1 {
-            font-size: 1.3em;
-            font-weight: 700;
-        }
-        
-        .logo-version {
-            color: var(--text-secondary);
-            font-size: 0.75em;
-            margin-left: 52px;
-            margin-bottom: 32px;
-        }
-        
-        .nav-section {
-            margin-bottom: 24px;
-        }
-        
-        .nav-section-title {
-            color: var(--text-secondary);
-            font-size: 0.65em;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 12px;
-            padding-left: 12px;
-        }
-        
-        .nav-item {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 10px 12px;
-            border-radius: 8px;
-            color: var(--text-secondary);
-            text-decoration: none;
-            font-size: 0.9em;
-            transition: all 0.2s;
-            margin-bottom: 4px;
-        }
-        
-        .nav-item:hover {
-            background: rgba(255, 255, 255, 0.03);
-            color: var(--text-primary);
-        }
-        
-        .nav-item.active {
-            background: rgba(0, 212, 255, 0.1);
-            color: var(--accent-cyan);
-        }
-        
-        .user-profile {
-            margin-top: auto;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 12px;
-            border-radius: 10px;
-            background: rgba(255, 255, 255, 0.03);
-        }
-        
-        .user-avatar {
-            width: 36px;
-            height: 36px;
-            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        
-        .user-info {
-            flex: 1;
-        }
-        
-        .user-name {
-            font-size: 0.9em;
-            font-weight: 500;
-        }
-        
-        .user-role {
-            font-size: 0.75em;
-            color: var(--text-secondary);
-        }
-        
-        .logout-btn {
-            color: var(--text-secondary);
-            cursor: pointer;
-            padding: 8px;
-            border-radius: 6px;
-            transition: all 0.2s;
-        }
-        
-        .logout-btn:hover {
-            color: var(--accent-red);
-            background: rgba(255, 71, 87, 0.1);
-        }
-        
-        /* Main Content */
-        .main-content {
-            flex: 1;
-            padding: 24px 32px;
-            overflow-y: auto;
-        }
-        
-        .header {
-            margin-bottom: 24px;
-        }
-        
-        .header h2 {
-            font-size: 1.5em;
-            font-weight: 600;
-            margin-bottom: 4px;
-        }
-        
-        .header p {
-            color: var(--text-secondary);
-            font-size: 0.9em;
-        }
-        
-        /* Settings Nav */
-        .settings-nav {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 24px;
-            flex-wrap: wrap;
-        }
-        
-        .settings-nav button {
-            padding: 10px 20px;
-            background: var(--bg-card);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            color: var(--text-secondary);
-            cursor: pointer;
-            font-size: 0.9em;
-            transition: all 0.2s;
-        }
-        
-        .settings-nav button:hover, .settings-nav button.active {
-            border-color: var(--accent-cyan);
-            color: var(--accent-cyan);
-        }
-        
-        /* Section */
-        .section {
-            display: none;
-        }
-        
-        .section.active {
-            display: block;
-        }
-        
-        .card {
-            background: var(--bg-card);
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-            padding: 24px;
-            margin-bottom: 16px;
-        }
-        
-        .card h3 {
-            font-size: 1em;
-            margin-bottom: 20px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        
-        .form-group {
-            margin-bottom: 16px;
-        }
-        
-        .form-group label {
-            display: block;
-            color: var(--text-secondary);
-            font-size: 0.8em;
-            margin-bottom: 8px;
-            text-transform: uppercase;
-        }
-        
-        .form-group input {
-            width: 100%;
-            padding: 12px 16px;
-            background: rgba(0, 0, 0, 0.3);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            color: var(--text-primary);
-            font-size: 0.95em;
-        }
-        
-        .form-group input:focus {
-            outline: none;
-            border-color: var(--accent-cyan);
-        }
-        
-        .form-row {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 16px;
-        }
-        
-        .toggle {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 12px 0;
-            border-bottom: 1px solid var(--border-color);
-        }
-        
-        .toggle:last-child {
-            border-bottom: none;
-        }
-        
-        .toggle-info h4 {
-            font-size: 0.95em;
-        }
-        
-        .toggle-info p {
-            color: var(--text-secondary);
-            font-size: 0.8em;
-        }
-        
-        .toggle-switch {
-            position: relative;
-            width: 48px;
-            height: 24px;
-        }
-        
-        .toggle-switch input {
-            opacity: 0;
-            width: 0;
-            height: 0;
-        }
-        
-        .toggle-slider {
-            position: absolute;
-            cursor: pointer;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 24px;
-            transition: 0.3s;
-        }
-        
-        .toggle-slider:before {
-            position: absolute;
-            content: "";
-            height: 18px;
-            width: 18px;
-            left: 3px;
-            bottom: 3px;
-            background: #fff;
-            border-radius: 50%;
-            transition: 0.3s;
-        }
-        
-        .toggle-switch input:checked + .toggle-slider {
-            background: var(--accent-cyan);
-        }
-        
-        .toggle-switch input:checked + .toggle-slider:before {
-            transform: translateX(24px);
-        }
-        
-        .btn {
-            padding: 12px 24px;
-            border: none;
-            border-radius: 8px;
-            font-size: 0.9em;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        
-        .btn-primary {
-            background: var(--accent-cyan);
-            color: #000;
-        }
-        
-        .btn-primary:hover {
-            background: #33ddff;
-        }
-        
-        .btn-success {
-            background: var(--accent-green);
-            color: #000;
-        }
-        
-        .btn-secondary {
-            background: rgba(255, 255, 255, 0.05);
-            color: var(--text-primary);
-            border: 1px solid var(--border-color);
-        }
-        
-        .update-log {
-            background: rgba(0, 0, 0, 0.3);
-            border-radius: 8px;
-            padding: 16px;
-            margin-top: 16px;
-            font-family: monospace;
-            font-size: 0.85em;
-            display: none;
-        }
-        
-        .update-log.active {
-            display: block;
-        }
-        
-        .save-bar {
-            position: fixed;
-            bottom: 0;
-            left: 240px;
-            right: 0;
-            background: var(--bg-sidebar);
-            border-top: 1px solid var(--border-color);
-            padding: 16px 32px;
-            display: flex;
-            justify-content: flex-end;
-            gap: 12px;
-        }
-    </style>
-</head>
-<body>
-    <!-- Sidebar -->
-    <aside class="sidebar">
-        <div class="logo">
-            <div class="logo-icon">🤖</div>
-            <div class="logo-text">
-                <h1>OMNIBOT</h1>
-            </div>
-        </div>
-        <div class="logo-version">v2.7.2 Titan</div>
-        
-        <div class="nav-section">
-            <div class="nav-section-title">Main</div>
-            <a href="/" class="nav-item">
-                <i>📊</i> Dashboard
-            </a>
-            <a href="/positions" class="nav-item">
-                <i>💼</i> Positions
-            </a>
-            <a href="/orders" class="nav-item">
-                <i>📋</i> Order History
-            </a>
-            <a href="/graphs" class="nav-item">
-                <i>📈</i> Graphs
-            </a>
-        </div>
-        
-        <div class="nav-section">
-            <div class="nav-section-title">Configuration</div>
-            <a href="/settings" class="nav-item active">
-                <i>⚙️</i> Settings
-            </a>
-            <a href="/strategy" class="nav-item">
-                <i>🧠</i> Strategy
-            </a>
-        </div>
-        
-        <div class="nav-section">
-            <div class="nav-section-title">System</div>
-            <a href="/logs" class="nav-item">
-                <i>⌨️</i> Logs
-            </a>
-            <a href="/help" class="nav-item">
-                <i>❓</i> Help
-            </a>
-        </div>
-        
-        <div class="user-profile">
-            <div class="user-avatar">👤</div>
-            <div class="user-info">
-                <div class="user-name">Admin</div>
-                <div class="user-role">Trader</div>
-            </div>
-            <a href="/logout" class="logout-btn">🚪</a>
-        </div>
-    </aside>
-    
-    <!-- Main Content -->
-    <main class="main-content">
-        <div class="header">
-            <h2>Settings</h2>
-            <p>Configure your trading bot</p>
-        </div>
-        
-        <div class="settings-nav">
-            <button class="active" onclick="showSection('api')">API Keys</button>
-            <button onclick="showSection('risk')">Risk</button>
-            <button onclick="showSection('wifi')">WiFi</button>
-            <button onclick="showSection('display')">Display</button>
-            <button onclick="showSection('update')">Update</button>
-        </div>
-        
-        <!-- API Keys -->
-        <div class="section active" id="api">
-            <div class="card">
-                <h3>📈 Alpaca (Stocks)</h3>
-                <div class="form-group">
-                    <label>API Key</label>
-                    <input type="text" id="alpaca-key" placeholder="PK...">
-                </div>
-                <div class="form-group">
-                    <label>Secret Key</label>
-                    <input type="password" id="alpaca-secret" placeholder="Secret key">
-                </div>
-                <div class="toggle">
-                    <div class="toggle-info">
-                        <h4>Paper Trading</h4>
-                        <p>Use simulated trading</p>
-                    </div>
-                    <label class="toggle-switch">
-                        <input type="checkbox" id="alpaca-paper" checked>
-                        <span class="toggle-slider"></span>
-                    </label>
-                </div>
-            </div>
-            
-            <div class="card">
-                <h3>₿ Binance (Crypto)</h3>
-                <div class="form-group">
-                    <label>API Key</label>
-                    <input type="text" id="binance-key" placeholder="API key">
-                </div>
-                <div class="form-group">
-                    <label>Secret Key</label>
-                    <input type="password" id="binance-secret" placeholder="Secret key">
-                </div>
-                <div class="toggle">
-                    <div class="toggle-info">
-                        <h4>Testnet Mode</h4>
-                    </div>
-                    <label class="toggle-switch">
-                        <input type="checkbox" id="binance-testnet" checked>
-                        <span class="toggle-slider"></span>
-                    </label>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Risk -->
-        <div class="section" id="risk">
-            <div class="card">
-                <h3>⚡ Risk Management</h3>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>Stop Loss (%)</label>
-                        <input type="number" id="stop-loss" value="5">
-                    </div>
-                    <div class="form-group">
-                        <label>Take Profit (%)</label>
-                        <input type="number" id="take-profit" value="10">
-                    </div>
-                </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>Max Position (%)</label>
-                        <input type="number" id="max-position" value="10">
-                    </div>
-                    <div class="form-group">
-                        <label>Max Daily Loss (%)</label>
-                        <input type="number" id="max-daily-loss" value="5">
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <!-- WiFi -->
-        <div class="section" id="wifi">
-            <div class="card">
-                <h3>📶 WiFi Networks</h3>
-                <button class="btn btn-primary" onclick="scanWiFi()">Scan Networks</button>
-                <div id="wifi-list" style="margin-top: 16px;"></div>
-            </div>
-        </div>
-        
-        <!-- Display -->
-        <div class="section" id="display">
-            <div class="card">
-                <h3>🖥️ Display Settings</h3>
-                <div class="form-group">
-                    <label>Screen Brightness</label>
-                    <input type="range" id="brightness" min="10" max="100" value="100" 
-                           style="width: 100%; margin-top: 8px;">
-                </div>
-                <div class="toggle">
-                    <div class="toggle-info">
-                        <h4>Sleep Timer</h4>
-                        <p>Auto sleep after inactivity</p>
-                    </div>
-                    <label class="toggle-switch">
-                        <input type="checkbox" id="sleep-enabled" checked>
-                        <span class="toggle-slider"></span>
-                    </label>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Update -->
-        <div class="section" id="update">
-            <div class="card">
-                <h3>🔄 Software Update</h3>
-                <div class="form-group">
-                    <label>GitHub Repository</label>
-                    <input type="text" id="github-repo" value="https://github.com/3D-Magic/OmniBot-Testing">
-                </div>
-                <div class="form-group">
-                    <label>Branch</label>
-                    <input type="text" id="github-branch" value="Omnibot-v2.7.2-Titan">
-                </div>
-                <div style="display: flex; gap: 12px;">
-                    <button class="btn btn-primary" onclick="checkUpdate()">Check for Updates</button>
-                    <button class="btn btn-success" id="btn-update" style="display: none;" onclick="startUpdate()">Update Now</button>
-                </div>
-                <div id="update-log" class="update-log"></div>
-            </div>
-        </div>
-        
-        <div style="height: 80px;"></div>
-    </main>
-    
-    <div class="save-bar">
-        <button class="btn btn-secondary" onclick="loadSettings()">Reset</button>
-        <button class="btn btn-primary" onclick="saveSettings()">Save Settings</button>
+{% extends "base.html" %}
+{% block content %}
+<div class="header">
+    <h2>⚙️ Settings</h2>
+</div>
+
+<div class="card">
+    <h3>🔑 Alpaca API Keys</h3>
+    <div class="form-section">
+        <label class="form-label">API Key</label>
+        <input type="text" id="alpacaApiKey" placeholder="PK...">
+        
+        <label class="form-label">Secret Key</label>
+        <input type="password" id="alpacaSecretKey" placeholder="Enter secret key">
+        
+        <label class="form-label">Mode</label>
+        <select id="alpacaPaper">
+            <option value="true">Paper Trading (Test)</option>
+            <option value="false">Live Trading (Real Money)</option>
+        </select>
+        
+        <label class="checkbox-label">
+            <input type="checkbox" id="alpacaEnabled">
+            <span>Enable Alpaca</span>
+        </label>
     </div>
+</div>
+
+<div class="card">
+    <h3>🔑 Binance API Keys</h3>
+    <div class="form-section">
+        <label class="form-label">API Key</label>
+        <input type="text" id="binanceApiKey" placeholder="Enter API key">
+        
+        <label class="form-label">Secret Key</label>
+        <input type="password" id="binanceSecretKey" placeholder="Enter secret key">
+        
+        <label class="form-label">Mode</label>
+        <select id="binanceTestnet">
+            <option value="true">Testnet (Test)</option>
+            <option value="false">Live Trading (Real Money)</option>
+        </select>
+        
+        <label class="checkbox-label">
+            <input type="checkbox" id="binanceEnabled">
+            <span>Enable Binance</span>
+        </label>
+    </div>
+</div>
+
+<div class="card">
+    <h3>🔑 PayPal API Keys</h3>
+    <div class="form-section">
+        <label class="form-label">Client ID</label>
+        <input type="text" id="paypalClientId" placeholder="Enter client ID">
+        
+        <label class="form-label">Client Secret</label>
+        <input type="password" id="paypalClientSecret" placeholder="Enter client secret">
+        
+        <label class="form-label">Mode</label>
+        <select id="paypalSandbox">
+            <option value="true">Sandbox (Test)</option>
+            <option value="false">Live (Real Money)</option>
+        </select>
+        
+        <label class="checkbox-label">
+            <input type="checkbox" id="paypalEnabled">
+            <span>Enable PayPal</span>
+        </label>
+    </div>
+</div>
+
+<div class="card">
+    <h3>⚠️ Risk Management</h3>
+    <div class="form-grid">
+        <div>
+            <label class="form-label">Stop Loss (%)</label>
+            <input type="number" id="stopLoss" value="5" step="0.1">
+        </div>
+        <div>
+            <label class="form-label">Take Profit (%)</label>
+            <input type="number" id="takeProfit" value="10" step="0.1">
+        </div>
+        <div>
+            <label class="form-label">Max Position Size (%)</label>
+            <input type="number" id="maxPosition" value="10" step="0.1">
+        </div>
+        <div>
+            <label class="form-label">Max Daily Loss ($)</label>
+            <input type="number" id="maxDailyLoss" value="100" step="1">
+        </div>
+    </div>
+</div>
+
+<div class="button-group">
+    <button class="btn btn-success" onclick="saveSettings()">💾 Save Settings</button>
+    <button class="btn btn-primary" onclick="testConnections()">🔄 Test Connections</button>
+</div>
+
+<div id="saveResult" style="margin-top: 16px;"></div>
+
+<script>
+async function loadSettings() {
+    try {
+        const res = await fetch('/api/settings');
+        const data = await res.json();
+        
+        if (data.brokers && data.brokers.alpaca) {
+            document.getElementById('alpacaApiKey').value = data.brokers.alpaca.api_key || '';
+            document.getElementById('alpacaSecretKey').value = data.brokers.alpaca.secret_key || '';
+            document.getElementById('alpacaPaper').value = data.brokers.alpaca.paper ? 'true' : 'false';
+            document.getElementById('alpacaEnabled').checked = data.brokers.alpaca.enabled || false;
+        }
+        
+        if (data.brokers && data.brokers.binance) {
+            document.getElementById('binanceApiKey').value = data.brokers.binance.api_key || '';
+            document.getElementById('binanceSecretKey').value = data.brokers.binance.secret_key || '';
+            document.getElementById('binanceTestnet').value = data.brokers.binance.testnet ? 'true' : 'false';
+            document.getElementById('binanceEnabled').checked = data.brokers.binance.enabled || false;
+        }
+        
+        if (data.brokers && data.brokers.paypal) {
+            document.getElementById('paypalClientId').value = data.brokers.paypal.client_id || '';
+            document.getElementById('paypalClientSecret').value = data.brokers.paypal.client_secret || '';
+            document.getElementById('paypalSandbox').value = data.brokers.paypal.sandbox ? 'true' : 'false';
+            document.getElementById('paypalEnabled').checked = data.brokers.paypal.enabled || false;
+        }
+        
+        if (data.risk) {
+            document.getElementById('stopLoss').value = data.risk.stop_loss_pct || 5;
+            document.getElementById('takeProfit').value = data.risk.take_profit_pct || 10;
+            document.getElementById('maxPosition').value = data.risk.max_position_pct || 10;
+            document.getElementById('maxDailyLoss').value = data.risk.max_daily_loss || 100;
+        }
+    } catch (e) {
+        console.error('Error loading settings:', e);
+    }
+}
+
+async function saveSettings() {
+    const settings = {
+        brokers: {
+            alpaca: {
+                api_key: document.getElementById('alpacaApiKey').value,
+                secret_key: document.getElementById('alpacaSecretKey').value,
+                paper: document.getElementById('alpacaPaper').value === 'true',
+                enabled: document.getElementById('alpacaEnabled').checked
+            },
+            binance: {
+                api_key: document.getElementById('binanceApiKey').value,
+                secret_key: document.getElementById('binanceSecretKey').value,
+                testnet: document.getElementById('binanceTestnet').value === 'true',
+                enabled: document.getElementById('binanceEnabled').checked
+            },
+            paypal: {
+                client_id: document.getElementById('paypalClientId').value,
+                client_secret: document.getElementById('paypalClientSecret').value,
+                sandbox: document.getElementById('paypalSandbox').value === 'true',
+                enabled: document.getElementById('paypalEnabled').checked
+            }
+        },
+        risk: {
+            stop_loss_pct: parseFloat(document.getElementById('stopLoss').value),
+            take_profit_pct: parseFloat(document.getElementById('takeProfit').value),
+            max_position_pct: parseFloat(document.getElementById('maxPosition').value),
+            max_daily_loss: parseFloat(document.getElementById('maxDailyLoss').value)
+        }
+    };
     
-    <script>
-        function showSection(id) {
-            document.querySelectorAll('.settings-nav button').forEach(b => b.classList.remove('active'));
-            event.target.classList.add('active');
-            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-            document.getElementById(id).classList.add('active');
-        }
+    try {
+        const res = await fetch('/api/settings', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(settings)
+        });
+        const data = await res.json();
         
-        async function loadSettings() {
-            const res = await fetch('/api/settings');
-            const s = await res.json();
-            document.getElementById('stop-loss').value = s.stop_loss_pct || 5;
-            document.getElementById('take-profit').value = s.take_profit_pct || 10;
-            document.getElementById('max-position').value = s.max_position_pct || 10;
-            document.getElementById('max-daily-loss').value = s.max_daily_loss_pct || 5;
-            document.getElementById('brightness').value = s.screen_brightness || 100;
-            if (s.alpaca) {
-                document.getElementById('alpaca-key').value = s.alpaca.api_key || '';
-                document.getElementById('alpaca-secret').value = s.alpaca.secret_key || '';
-                document.getElementById('alpaca-paper').checked = s.alpaca.paper !== false;
-            }
-            if (s.binance) {
-                document.getElementById('binance-key').value = s.binance.api_key || '';
-                document.getElementById('binance-secret').value = s.binance.secret_key || '';
-                document.getElementById('binance-testnet').checked = s.binance.testnet !== false;
-            }
+        if (data.success) {
+            document.getElementById('saveResult').innerHTML = '<span style="color: var(--accent-green);">✅ Settings saved successfully!</span>';
+        } else {
+            document.getElementById('saveResult').innerHTML = '<span style="color: var(--accent-red);">❌ Failed to save settings</span>';
         }
+    } catch (e) {
+        document.getElementById('saveResult').innerHTML = '<span style="color: var(--accent-red);">❌ Connection error</span>';
+    }
+}
+
+async function testConnections() {
+    document.getElementById('saveResult').innerHTML = '<span style="color: var(--accent-cyan);">🔄 Testing connections...</span>';
+    
+    try {
+        const res = await fetch('/api/status');
+        const data = await res.json();
         
-        async function saveSettings() {
-            const settings = {
-                stop_loss_pct: parseFloat(document.getElementById('stop-loss').value),
-                take_profit_pct: parseFloat(document.getElementById('take-profit').value),
-                max_position_pct: parseInt(document.getElementById('max-position').value),
-                max_daily_loss_pct: parseInt(document.getElementById('max-daily-loss').value),
-                screen_brightness: parseInt(document.getElementById('brightness').value),
-                alpaca: {
-                    api_key: document.getElementById('alpaca-key').value,
-                    secret_key: document.getElementById('alpaca-secret').value,
-                    paper: document.getElementById('alpaca-paper').checked
-                },
-                binance: {
-                    api_key: document.getElementById('binance-key').value,
-                    secret_key: document.getElementById('binance-secret').value,
-                    testnet: document.getElementById('binance-testnet').checked
-                }
-            };
-            await fetch('/api/settings', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify(settings)
-            });
-        }
+        let html = '<div style="margin-top: 10px;">';
+        html += '<h4 style="color: var(--text-secondary); margin-bottom: 8px;">Connection Status:</h4>';
         
-        async function checkUpdate() {
-            const log = document.getElementById('update-log');
-            const btn = document.getElementById('btn-update');
-            log.classList.add('active');
-            log.innerHTML = 'Checking...';
-            
-            const res = await fetch('/api/update/check', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({
-                    repo_url: document.getElementById('github-repo').value,
-                    branch: document.getElementById('github-branch').value
-                })
-            });
-            const data = await res.json();
-            
-            if (data.success) {
-                log.innerHTML = `Current: ${data.current_version}<br>Latest: ${data.latest_version}`;
-                if (data.update_available) {
-                    log.innerHTML += '<br><span style="color: var(--accent-green);">Update available!</span>';
-                    btn.style.display = 'inline-block';
-                }
-            }
-        }
+        html += data.brokers.alpaca.connected 
+            ? '<div style="color: var(--accent-green);">✅ Alpaca: Connected</div>'
+            : '<div style="color: var(--accent-red);">❌ Alpaca: Not Connected</div>';
         
-        async function startUpdate() {
-            if (!confirm('Update and restart?')) return;
-            await fetch('/api/update/start', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({
-                    repo_url: document.getElementById('github-repo').value,
-                    branch: document.getElementById('github-branch').value
-                })
-            });
-            setTimeout(() => location.reload(), 5000);
-        }
+        html += data.brokers.binance.connected 
+            ? '<div style="color: var(--accent-green);">✅ Binance: Connected</div>'
+            : '<div style="color: var(--accent-red);">❌ Binance: Not Connected</div>';
         
-        async function scanWiFi() {
-            const list = document.getElementById('wifi-list');
-            list.innerHTML = '<p style="color: var(--text-secondary);">Scanning...</p>';
-            try {
-                const res = await fetch('/api/wifi/scan');
-                const networks = await res.json();
-                list.innerHTML = networks.map(n => `
-                    <div style="padding: 12px; background: rgba(0,0,0,0.2); border-radius: 8px; margin-bottom: 8px;">
-                        <strong>${n.ssid}</strong> <span style="color: var(--text-secondary);">${n.signal}%</span>
-                    </div>
-                `).join('');
-            } catch (e) {
-                list.innerHTML = '<p style="color: var(--accent-red);">Error scanning</p>';
-            }
-        }
+        html += data.brokers.paypal.connected 
+            ? '<div style="color: var(--accent-green);">✅ PayPal: Connected</div>'
+            : '<div style="color: var(--accent-red);">❌ PayPal: Not Connected</div>';
         
-        document.addEventListener('DOMContentLoaded', loadSettings);
-    </script>
-</body>
-</html>
+        html += '</div>';
+        document.getElementById('saveResult').innerHTML = html;
+    } catch (e) {
+        document.getElementById('saveResult').innerHTML = '<span style="color: var(--accent-red);">❌ Failed to test connections</span>';
+    }
+}
+
+loadSettings();
+</script>
+{% endblock %}

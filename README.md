@@ -1,348 +1,183 @@
-# OMNIBOT v2.7.2 Titan
+# 🤖 OMNIBOT TITAN v2.7.2
 
-A fully functional, multi-broker trading bot for Raspberry Pi 5 with a modern web dashboard, real-time trading capabilities, and comprehensive system management.
+[![Version](https://img.shields.io/badge/version-2.7.2-blue.svg)](https://github.com/omnibot/omnibot-titan)
+[![Python](https://img.shields.io/badge/python-3.8+-green.svg)](https://www.python.org/)
+[![License](https://img.shields.io/badge/license-MIT-yellow.svg)](LICENSE)
 
-## Features
+**Professional Algorithmic Trading Bot with Real Order Execution**
 
-<img width="1607" height="753" alt="dashboard-preview" src="https://github.com/user-attachments/assets/bfa95307-b6a4-47e3-8ea2-dfbede5e7b2e" />
+OMNIBOT TITAN is a complete trading system that supports multiple brokers (Alpaca, Binance, PayPal) with real order execution, a beautiful web dashboard, and touch keyboard support for Raspberry Pi displays.
 
-### Trading Features
-- **7 Selectable Trading Strategies**:
-  - Scalping (1-5 min, high frequency)
-  - Day Trading (5-15 min, intraday)
-  - Swing Trading (daily, multi-day holds) - Default
-  - Momentum (trend following with volume)
-  - Mean Reversion (Bollinger Bands based)
-  - Breakout (support/resistance levels)
-  - Trend Following (SMA crossovers)
+![Dashboard Preview](docs/images/dashboard-preview.png)
 
-- **Multi-Broker Support**:
-  - Alpaca (Stocks & ETFs)
-  - Binance (Cryptocurrency)
-  - PayPal (Central wallet tracking)
-  - Interactive Brokers (via TWS/Gateway)
+## ✨ Features
 
-- **Risk Management**:
-  - Configurable stop loss (default 5%)
-  - Configurable take profit (default 10%)
-  - Trailing stops
-  - Position size limits
-  - Daily loss limits
-  - Sell-all-profitable feature
+### Trading
+- ✅ **Alpaca** - Paper & Live trading (Stocks/ETFs)
+- ✅ **Binance** - Testnet & Live trading (Crypto)
+- ✅ **PayPal** - Balance tracking
+- ✅ **Real order execution** - Not a simulator
+- ✅ **Manual trading** - Place orders via web interface
+- ✅ **6 automated strategies** - Scalping, Day Trading, Swing, Momentum, Mean Reversion, Breakout
 
-### Dashboard Features
-- Modern, responsive web interface
-- Real-time portfolio tracking
-- Live position monitoring
-- Order history with filtering
-- Interactive charts (6 chart types)
-- Dark theme optimized for trading
+### Display
+- ✅ **Touch keyboard** - JavaScript keyboard for all input fields
+- ✅ **Kiosk mode** - PyQt5 browser (no Chromium crashes on Pi)
+- ✅ **Auto-login** - Boots straight to dashboard
+- ✅ **Pi optimized** - Works on all Raspberry Pi models
 
-### System Features (Raspberry Pi)
-- **WiFi Management**: Scan, connect, disconnect from dashboard
-- **Screen Control**: Brightness adjustment, sleep timer
-- **Kiosk Mode**: Fullscreen dashboard on boot
-- **VNC Access**: Remote desktop access
-- **Auto-login Security**: Login required on screen wake
+### System
+- ✅ **Auto-start** - Starts on boot
+- ✅ **Web dashboard** - Access from any device
+- ✅ **Real-time updates** - Live portfolio data
+- ✅ **Position tracking** - Monitor all positions
+- ✅ **Order history** - View all executed orders
 
-## Installation
+## 🚀 Quick Start
 
-### Raspberry Pi 5 (Debian Trixie)
+### Requirements
+- Raspberry Pi (3, 4, 5, or Zero 2 W) OR any Linux/macOS/Windows machine
+- Python 3.8+
+- Internet connection
 
-```bash
-# Download and run the installer
-curl -fsSL https://raw.githubusercontent.com/3D-Magic/OmniBot-Testing/Omnibot-v2.7.2-Titan/install_pi.sh -o install_pi.sh
-sudo bash install_pi.sh
-```
-
-### Manual Installation
+### Installation
 
 ```bash
 # Clone the repository
-git clone -b Omnibot-v2.7.2-Titan https://github.com/3D-Magic/OmniBot-Testing.git
-cd OmniBot-Testing
+git clone https://github.com/yourusername/omnibot-titan.git
+cd omnibot-titan
 
-# Create virtual environment
-python3 -m venv venv
-source venv/bin/activate
-
-# Install dependencies
+# Install Python dependencies
 pip install -r requirements.txt
 
+# On Raspberry Pi, also install display packages
+sudo apt-get install python3-pyqt5 python3-pyqt5.qtwebengine
+
 # Run the bot
-python app.py
+python src/app.py
 ```
 
-## Configuration
+### Access Dashboard
 
-### 1. API Keys (Required)
+Open your browser and go to: `http://localhost:8081`
 
-Navigate to Settings → API Keys in the dashboard and configure:
+**Default Login:**
+- Username: `admin`
+- Password: `admin`
 
-#### Alpaca (Stocks)
-- Get API keys from [Alpaca Markets](https://alpaca.markets/)
-- Enable paper trading for testing
-- Recommended: Start with paper trading
+## ⚙️ Configuration
 
-#### Binance (Crypto)
-- Get API keys from [Binance](https://www.binance.com/)
-- Enable testnet for testing
-- Required permissions: Spot trading
+### Add API Keys
 
-#### PayPal (Optional Wallet)
-- Get credentials from [PayPal Developer](https://developer.paypal.com/)
-- Use sandbox for testing
-- Enables central wallet tracking
+1. Login to the dashboard
+2. Go to **Settings** page
+3. Enter your API keys:
 
-#### Interactive Brokers (Optional)
-- Requires TWS or IB Gateway running
-- Default port: 7497 (TWS) or 7496 (Gateway)
+**Alpaca:**
+- Get keys at https://app.alpaca.markets/
+- Paper trading: Use paper keys for testing
+- Live trading: Use live keys (be careful!)
 
-### 2. Trading Strategy
+**Binance:**
+- Get keys at https://www.binance.com/en/my/settings/api-management
+- Testnet: Use testnet keys for testing
+- Live trading: Use real keys (be careful!)
 
-Navigate to Settings → Strategies and select:
+**PayPal:**
+- Get keys at https://developer.paypal.com/
+- Sandbox: Use sandbox for testing
+- Live: Use live keys for real transactions
 
-| Strategy | Risk | Timeframe | Target |
-|----------|------|-----------|--------|
-| Scalping | High | 1-5 min | 0.5-1% |
-| Day Trading | Medium | 5-15 min | 1-3% |
-| Swing Trading | Medium | Daily | 5-10% |
-| Momentum | High | Daily | 8-15% |
-| Mean Reversion | Medium | Daily | 3-6% |
-| Breakout | High | Daily | 10-20% |
-| Trend Following | Medium | Daily | 10-20% |
+4. Click **Save Settings**
+5. Click **Test Connections** to verify
 
-### 3. Risk Management
+## 📊 Dashboard Pages
 
-Configure in Settings → Risk Management:
-- Stop Loss: Default 5%
-- Take Profit: Default 10%
-- Max Position Size: Default 10%
-- Max Daily Loss: Default 5%
+| Page | Description |
+|------|-------------|
+| **Dashboard** | Portfolio overview, trading status |
+| **Positions** | View all open positions |
+| **Orders** | Order history and status |
+| **Trade** | Manual order placement |
+| **Graphs** | Charts and analytics |
+| **Strategy** | Select and configure strategies |
+| **Settings** | Configure API keys and risk |
+| **Logs** | System logs |
 
-### 4. Screen Settings (Pi)
+## 🛠️ Raspberry Pi Installation
 
-Navigate to Settings → Display & Screen:
-- Brightness: 10-100%
-- Sleep Timer: 1, 5, 10, or 30 minutes
-- Login on Wake: Enabled by default
-
-### 5. WiFi Management
-
-Navigate to Settings → WiFi Network:
-- Click "Scan" to find networks
-- Click "Connect" and enter password
-- View connection status and signal strength
-
-## Usage
-
-### Starting the Bot
+For a complete Pi setup with auto-start and kiosk mode:
 
 ```bash
-# Start the service
-sudo systemctl start omnibot
+# Run the install script
+sudo ./scripts/install.sh
 
-# View status
-sudo systemctl status omnibot
+# Reboot
+sudo reboot
+```
+
+After reboot, the Pi will:
+1. Auto-login as `omnibot` user
+2. Start the OMNIBOT backend
+3. Launch the kiosk display
+
+## 🔧 Commands
+
+```bash
+# Start the bot
+python src/app.py
+
+# Start kiosk display (on Pi)
+python src/kiosk.py
 
 # View logs
 sudo journalctl -u omnibot -f
 ```
 
-### Accessing the Dashboard
-
-- **Local**: http://localhost:8081
-- **Network**: http://[pi-ip-address]:8081
-- **Default Login**: admin / admin
-
-### VNC Access
-
-- **Address**: [pi-ip-address]:5900
-- Use RealVNC Viewer or any VNC client
-
-### Kiosk Mode
-
-The dashboard automatically starts in fullscreen on boot. To disable:
-
-```bash
-sudo systemctl disable omnibot-kiosk
-```
-
-## Trading Controls
-
-### Dashboard Buttons
-- **Start Trading**: Begin automated trading
-- **Stop Trading**: Halt all trading activity
-- **Sell All**: Sell all positions immediately
-- **Sell Profitable**: Sell only profitable positions, disable buying
-
-### Re-enabling Buying
-
-After "Sell Profitable", buying is disabled. To re-enable:
-
-```bash
-# Via API
-curl -X POST http://localhost:8081/api/trading/enable_buying \
-  -H "Content-Type: application/json"
-```
-
-Or use the dashboard button (if implemented).
-
-## File Structure
+## 📁 Project Structure
 
 ```
-/opt/omnibot/
-├── app.py                    # Main application
-├── config/
-│   ├── constants.py          # Default settings
-│   ├── settings.py           # Settings manager
-│   └── settings.json         # User settings (created on first run)
-├── brokers/
-│   ├── alpaca_config.py      # Alpaca integration
-│   ├── binance_config.py     # Binance integration
-│   ├── paypal_wallet.py      # PayPal wallet
-│   ├── ib_gateway_config.py  # Interactive Brokers
-│   └── balance_aggregator.py # Portfolio aggregation
-├── engine/
-│   ├── trading_engine.py     # Core trading logic
-│   └── strategies.py         # Trading strategies
+omnibot-titan/
 ├── src/
-│   ├── dashboard/
-│   │   ├── routes.py         # Web routes
-│   │   └── __init__.py
-│   └── system/
-│       ├── wifi_manager.py   # WiFi management
-│       └── screen_manager.py # Screen control
-├── templates/                # HTML templates
-├── static/                   # CSS, JS, images
-├── logs/                     # Log files
-├── data/                     # Data storage
-└── venv/                     # Python virtual environment
+│   ├── app.py           # Main trading bot
+│   └── kiosk.py         # PyQt5 kiosk browser
+├── templates/           # HTML templates
+├── static/
+│   ├── css/            # Stylesheets
+│   └── js/             # JavaScript
+├── config/
+│   └── settings.json   # Configuration
+├── scripts/
+│   └── install.sh      # Installation script
+├── docs/               # Documentation
+├── requirements.txt    # Python dependencies
+└── README.md          # This file
 ```
 
-## API Endpoints
+## ⚠️ Risk Warning
 
-### Trading
-- `POST /api/trading/start` - Start trading
-- `POST /api/trading/stop` - Stop trading
-- `POST /api/trading/sell_all` - Sell all positions
-- `POST /api/trading/sell_all_profitable` - Sell profitable only
-- `POST /api/trading/enable_buying` - Re-enable buying
-- `POST /api/trading/strategy` - Change strategy
+**Trading involves risk of loss. Only trade with money you can afford to lose.**
 
-### Data
-- `GET /api/status` - System status
-- `GET /api/portfolio` - Portfolio summary
-- `GET /api/positions` - Current positions
-- `GET /api/orders` - Order history
-- `GET /api/charts/data` - Chart data
+- Start with **paper trading** to test strategies
+- Use **stop losses** to limit downside
+- Monitor positions regularly
+- Never risk more than you can afford to lose
 
-### Settings
-- `GET /api/settings` - Get all settings
-- `POST /api/settings` - Update settings
-- `POST /api/settings/reset` - Reset to defaults
-- `POST /api/broker/config` - Update broker config
-- `POST /api/broker/test` - Test broker connection
+## 🤝 Contributing
 
-### WiFi (Pi)
-- `GET /api/wifi/status` - WiFi status
-- `GET /api/wifi/scan` - Scan networks
-- `POST /api/wifi/connect` - Connect to network
-- `POST /api/wifi/disconnect` - Disconnect
+Contributions are welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
-### Screen (Pi)
-- `GET /api/screen/status` - Screen status
-- `POST /api/screen/brightness` - Set brightness
-- `POST /api/screen/sleep` - Put screen to sleep
-- `POST /api/screen/wake` - Wake screen
-- `POST /api/screen/activity` - Record activity
+## 📜 License
 
-## Safety Features
+This project is licensed under the MIT License - see [LICENSE](LICENSE) file.
 
-1. **Paper Trading Default**: All brokers start in paper/test mode
-2. **Buying Disable**: After sell-all, buying is disabled until manually re-enabled
-3. **Position Limits**: Maximum position size prevents over-concentration
-4. **Stop Losses**: Automatic loss protection
-5. **Login on Wake**: Security when screen wakes from sleep
+## 🙏 Acknowledgments
 
-## Troubleshooting
-
-### Bot won't start
-```bash
-# Check logs
-sudo journalctl -u omnibot -f
-
-# Check Python dependencies
-cd /opt/omnibot
-source venv/bin/activate
-pip list | grep -E "flask|alpaca|binance"
-```
-
-### Dashboard not accessible
-```bash
-# Check if service is running
-sudo systemctl status omnibot
-
-# Check port
-sudo netstat -tlnp | grep 8081
-```
-
-### WiFi not connecting
-```bash
-# Check WiFi status
-nmcli device status
-
-# Scan networks
-nmcli dev wifi list
-```
-
-### Screen brightness not working
-```bash
-# Check backlight path
-ls /sys/class/backlight/
-
-# Test manual control
-echo 100 | sudo tee /sys/class/backlight/*/brightness
-```
-
-## Updating
-
-```bash
-sudo /opt/omnibot/update.sh
-```
-
-## Uninstalling
-
-```bash
-sudo /opt/omnibot/uninstall.sh
-```
-
-## Security Notes
-
-1. **Change default password**: Update in Settings → Security
-2. **Use paper trading**: Test thoroughly before live trading
-3. **Enable login on wake**: Prevents unauthorized access
-4. **Secure API keys**: Never commit keys to version control
-5. **Use HTTPS**: For production, configure SSL/TLS
-
-## Disclaimer
-
-**Trading involves significant risk of loss. This software is provided as-is without warranties. Always:**
-- Test thoroughly in paper trading mode first
-- Never trade with money you cannot afford to lose
-- Understand the strategy before using it
-- Monitor the bot regularly
-- Keep software updated
-
-## License
-
-Personal Use License - See LICENSE file for details
-
-## Support
-
-- GitHub Issues: https://github.com/3D-Magic/OmniBot-Testing/issues
-- Documentation: See docs/ folder
+- [Alpaca](https://alpaca.markets/) for their trading API
+- [Binance](https://www.binance.com/) for their crypto API
+- [Flask](https://flask.palletsprojects.com/) for the web framework
 
 ---
 
-**OMNIBOT v2.7.2 Titan** - Trade smarter, not harder.
+**Version:** 2.7.2  
+**Last Updated:** 2024-04-14

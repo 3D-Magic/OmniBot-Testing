@@ -1,725 +1,94 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OMNIBOT v2.7.2 - Dashboard</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        :root {
-            --bg-primary: #0a0a0f;
-            --bg-sidebar: #0d0d12;
-            --bg-card: #15151c;
-            --bg-card-hover: #1a1a22;
-            --text-primary: #ffffff;
-            --text-secondary: #8b8b9a;
-            --accent-cyan: #00d4ff;
-            --accent-green: #00ff88;
-            --accent-red: #ff4757;
-            --accent-orange: #ffa502;
-            --border-color: #1e1e28;
-        }
-        
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: var(--bg-primary);
-            color: var(--text-primary);
-            min-height: 100vh;
-            display: flex;
-        }
-        
-        /* Sidebar */
-        .sidebar {
-            width: 240px;
-            background: var(--bg-sidebar);
-            border-right: 1px solid var(--border-color);
-            display: flex;
-            flex-direction: column;
-            padding: 24px 16px;
-        }
-        
-        .logo {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            margin-bottom: 4px;
-        }
-        
-        .logo-icon {
-            width: 40px;
-            height: 40px;
-            background: linear-gradient(135deg, #6366f1, #8b5cf6);
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.3em;
-        }
-        
-        .logo-text h1 {
-            font-size: 1.3em;
-            font-weight: 700;
-            letter-spacing: 0.5px;
-        }
-        
-        .logo-version {
-            color: var(--text-secondary);
-            font-size: 0.75em;
-            margin-left: 52px;
-            margin-bottom: 32px;
-        }
-        
-        .nav-section {
-            margin-bottom: 24px;
-        }
-        
-        .nav-section-title {
-            color: var(--text-secondary);
-            font-size: 0.65em;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 12px;
-            padding-left: 12px;
-        }
-        
-        .nav-item {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 10px 12px;
-            border-radius: 8px;
-            color: var(--text-secondary);
-            text-decoration: none;
-            font-size: 0.9em;
-            transition: all 0.2s;
-            margin-bottom: 4px;
-        }
-        
-        .nav-item:hover {
-            background: rgba(255, 255, 255, 0.03);
-            color: var(--text-primary);
-        }
-        
-        .nav-item.active {
-            background: rgba(0, 212, 255, 0.1);
-            color: var(--accent-cyan);
-        }
-        
-        .nav-item i {
-            width: 18px;
-            text-align: center;
-        }
-        
-        .user-profile {
-            margin-top: auto;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 12px;
-            border-radius: 10px;
-            background: rgba(255, 255, 255, 0.03);
-        }
-        
-        .user-avatar {
-            width: 36px;
-            height: 36px;
-            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.9em;
-        }
-        
-        .user-info {
-            flex: 1;
-        }
-        
-        .user-name {
-            font-size: 0.9em;
-            font-weight: 500;
-        }
-        
-        .user-role {
-            font-size: 0.75em;
-            color: var(--text-secondary);
-        }
-        
-        .logout-btn {
-            color: var(--text-secondary);
-            cursor: pointer;
-            padding: 8px;
-            border-radius: 6px;
-            transition: all 0.2s;
-        }
-        
-        .logout-btn:hover {
-            color: var(--accent-red);
-            background: rgba(255, 71, 87, 0.1);
-        }
-        
-        /* Main Content */
-        .main-content {
-            flex: 1;
-            padding: 24px 32px;
-            overflow-y: auto;
-        }
-        
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 24px;
-        }
-        
-        .header-title h2 {
-            font-size: 1.5em;
-            font-weight: 600;
-            margin-bottom: 4px;
-        }
-        
-        .header-title p {
-            color: var(--text-secondary);
-            font-size: 0.9em;
-        }
-        
-        .header-actions {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-        
-        .status-pill {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 8px 16px;
-            background: rgba(0, 255, 136, 0.1);
-            border: 1px solid rgba(0, 255, 136, 0.2);
-            border-radius: 20px;
-            font-size: 0.85em;
-            color: var(--accent-green);
-        }
-        
-        .status-dot {
-            width: 8px;
-            height: 8px;
-            background: var(--accent-green);
-            border-radius: 50%;
-            animation: pulse 2s infinite;
-        }
-        
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
-        }
-        
-        .refresh-btn {
-            width: 40px;
-            height: 40px;
-            background: var(--bg-card);
-            border: 1px solid var(--border-color);
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--text-secondary);
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        
-        .refresh-btn:hover {
-            border-color: var(--accent-cyan);
-            color: var(--accent-cyan);
-        }
-        
-        /* Market Cards */
-        .market-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 16px;
-            margin-bottom: 16px;
-        }
-        
-        .market-card {
-            background: var(--bg-card);
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-            padding: 16px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-        
-        .market-icon {
-            width: 44px;
-            height: 44px;
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.2em;
-        }
-        
-        .market-icon.sp500 {
-            background: rgba(0, 255, 136, 0.15);
-            color: var(--accent-green);
-        }
-        
-        .market-icon.bitcoin {
-            background: rgba(247, 147, 26, 0.15);
-            color: #f7931a;
-        }
-        
-        .market-icon.ethereum {
-            background: rgba(98, 126, 234, 0.15);
-            color: #627eea;
-        }
-        
-        .market-icon.vix {
-            background: rgba(255, 71, 87, 0.15);
-            color: var(--accent-red);
-        }
-        
-        .market-info {
-            flex: 1;
-        }
-        
-        .market-name {
-            font-size: 0.8em;
-            color: var(--text-secondary);
-            margin-bottom: 4px;
-        }
-        
-        .market-price {
-            font-size: 1.1em;
-            font-weight: 600;
-            font-family: 'SF Mono', monospace;
-        }
-        
-        .market-change {
-            font-size: 0.8em;
-            margin-top: 2px;
-        }
-        
-        .market-change.positive {
-            color: var(--accent-green);
-        }
-        
-        .market-change.negative {
-            color: var(--accent-red);
-        }
-        
-        /* Stats Grid */
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 16px;
-            margin-bottom: 16px;
-        }
-        
-        .stat-card {
-            background: var(--bg-card);
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-            padding: 20px;
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .stat-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 3px;
-        }
-        
-        .stat-card.portfolio::before {
-            background: linear-gradient(90deg, var(--accent-cyan), #8b5cf6);
-        }
-        
-        .stat-card.positions::before {
-            background: linear-gradient(90deg, var(--accent-green), #00cc66);
-        }
-        
-        .stat-card.trades::before {
-            background: linear-gradient(90deg, var(--accent-orange), #cc8400);
-        }
-        
-        .stat-card.pnl::before {
-            background: linear-gradient(90deg, var(--accent-green), #00cc66);
-        }
-        
-        .stat-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 12px;
-        }
-        
-        .stat-label {
-            font-size: 0.75em;
-            color: var(--text-secondary);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        
-        .stat-icon {
-            width: 32px;
-            height: 32px;
-            background: rgba(0, 212, 255, 0.1);
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--accent-cyan);
-            font-size: 0.9em;
-        }
-        
-        .stat-value {
-            font-size: 2em;
-            font-weight: 700;
-            font-family: 'SF Mono', monospace;
-            margin-bottom: 8px;
-        }
-        
-        .stat-sub {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 0.85em;
-        }
-        
-        .stat-change {
-            color: var(--accent-green);
-        }
-        
-        .stat-change.negative {
-            color: var(--accent-red);
-        }
-        
-        .stat-text {
-            color: var(--text-secondary);
-        }
-        
-        /* Trading Controls */
-        .controls-section {
-            background: var(--bg-card);
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-            padding: 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        
-        .controls-title {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-weight: 600;
-        }
-        
-        .controls-title i {
-            color: var(--accent-cyan);
-        }
-        
-        .controls-buttons {
-            display: flex;
-            gap: 12px;
-        }
-        
-        .btn {
-            padding: 12px 24px;
-            border: none;
-            border-radius: 10px;
-            font-size: 0.9em;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        
-        .btn-danger {
-            background: var(--accent-red);
-            color: white;
-        }
-        
-        .btn-danger:hover {
-            background: #ff5c6c;
-            transform: translateY(-1px);
-        }
-        
-        .btn-secondary {
-            background: rgba(255, 255, 255, 0.05);
-            color: var(--text-primary);
-            border: 1px solid var(--border-color);
-        }
-        
-        .btn-secondary:hover {
-            background: rgba(255, 255, 255, 0.1);
-            border-color: var(--text-secondary);
-        }
-        
-        .btn-primary {
-            background: var(--accent-green);
-            color: #000;
-        }
-        
-        .btn-primary:hover {
-            background: #00ff99;
-            transform: translateY(-1px);
-        }
-    </style>
-</head>
-<body>
-    <!-- Sidebar -->
-    <aside class="sidebar">
-        <div class="logo">
-            <div class="logo-icon">🤖</div>
-            <div class="logo-text">
-                <h1>OMNIBOT</h1>
-            </div>
+{% extends "base.html" %}
+{% block content %}
+<div class="header">
+    <h2>📊 Dashboard</h2>
+    <div>
+        <button class="btn btn-success" id="startBtn" onclick="startTrading()">▶️ Start Trading</button>
+        <button class="btn btn-danger" id="stopBtn" onclick="stopTrading()">⏹️ Stop</button>
+    </div>
+</div>
+
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-label">Total Portfolio Value</div>
+        <div class="stat-value" id="totalValue">$0.00</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Daily P&L</div>
+        <div class="stat-value" id="dailyPnl">+$0.00</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Trading Status</div>
+        <div class="stat-value" id="status">
+            <span class="status-indicator status-offline"></span>Stopped
         </div>
-        <div class="logo-version">v2.7.2 Titan</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Active Strategy</div>
+        <div class="stat-value" id="activeStrategy">Swing Trading</div>
+    </div>
+</div>
+
+<div class="card" style="margin-top: 20px;">
+    <h3>Connected Brokers</h3>
+    <div id="brokers" class="stats-grid" style="margin-top: 16px;">
+        <div class="stat-card">
+            <div class="stat-label">Alpaca</div>
+            <div id="alpacaStatus"><span class="status-indicator status-offline"></span>Disconnected</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Binance</div>
+            <div id="binanceStatus"><span class="status-indicator status-offline"></span>Disconnected</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">PayPal</div>
+            <div id="paypalStatus"><span class="status-indicator status-offline"></span>Disconnected</div>
+        </div>
+    </div>
+</div>
+
+<script>
+async function loadStatus() {
+    try {
+        const res = await fetch('/api/status');
+        const data = await res.json();
         
-        <div class="nav-section">
-            <div class="nav-section-title">Main</div>
-            <a href="/" class="nav-item active">
-                <i>📊</i> Dashboard
-            </a>
-            <a href="/positions" class="nav-item">
-                <i>💼</i> Positions
-            </a>
-            <a href="/orders" class="nav-item">
-                <i>📋</i> Order History
-            </a>
-            <a href="/graphs" class="nav-item">
-                <i>📈</i> Graphs
-            </a>
-        </div>
+        document.getElementById('totalValue').textContent = '$' + data.portfolio.total_value.toFixed(2);
+        document.getElementById('dailyPnl').textContent = (data.portfolio.daily_pnl >= 0 ? '+' : '') + '$' + data.portfolio.daily_pnl.toFixed(2);
+        document.getElementById('dailyPnl').style.color = data.portfolio.daily_pnl >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
         
-        <div class="nav-section">
-            <div class="nav-section-title">Configuration</div>
-            <a href="/settings" class="nav-item">
-                <i>⚙️</i> Settings
-            </a>
-            <a href="/strategy" class="nav-item">
-                <i>🧠</i> Strategy
-            </a>
-        </div>
-        
-        <div class="nav-section">
-            <div class="nav-section-title">System</div>
-            <a href="/logs" class="nav-item">
-                <i>⌨️</i> Logs
-            </a>
-            <a href="/help" class="nav-item">
-                <i>❓</i> Help
-            </a>
-        </div>
-        
-        <div class="user-profile">
-            <div class="user-avatar">👤</div>
-            <div class="user-info">
-                <div class="user-name">Admin</div>
-                <div class="user-role">Trader</div>
-            </div>
-            <a href="/logout" class="logout-btn">🚪</a>
-        </div>
-    </aside>
-    
-    <!-- Main Content -->
-    <main class="main-content">
-        <div class="header">
-            <div class="header-title">
-                <h2>Dashboard</h2>
-                <p>Real-time trading overview</p>
-            </div>
-            <div class="header-actions">
-                <div class="status-pill">
-                    <span class="status-dot"></span>
-                    <span id="engine-status">Engine Running (moderate)</span>
-                </div>
-                <button class="refresh-btn" onclick="refreshDashboard()">🔄</button>
-            </div>
-        </div>
-        
-        <!-- Market Cards -->
-        <div class="market-grid">
-            <div class="market-card">
-                <div class="market-icon sp500">📈</div>
-                <div class="market-info">
-                    <div class="market-name">S&P 500</div>
-                    <div class="market-price">4,782.35</div>
-                    <div class="market-change positive">↑ 0.85%</div>
-                </div>
-            </div>
-            <div class="market-card">
-                <div class="market-icon bitcoin">₿</div>
-                <div class="market-info">
-                    <div class="market-name">Bitcoin</div>
-                    <div class="market-price">$43,248.50</div>
-                    <div class="market-change positive">↑ 3.25%</div>
-                </div>
-            </div>
-            <div class="market-card">
-                <div class="market-icon ethereum">◆</div>
-                <div class="market-info">
-                    <div class="market-name">Ethereum</div>
-                    <div class="market-price">$2,648.20</div>
-                    <div class="market-change positive">↑ 2.15%</div>
-                </div>
-            </div>
-            <div class="market-card">
-                <div class="market-icon vix">⚡</div>
-                <div class="market-info">
-                    <div class="market-name">VIX</div>
-                    <div class="market-price">13.45</div>
-                    <div class="market-change negative">↓ 5.20%</div>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Stats Grid Row 1 -->
-        <div class="stats-grid">
-            <div class="stat-card portfolio">
-                <div class="stat-header">
-                    <span class="stat-label">Total Portfolio Value</span>
-                    <div class="stat-icon">💼</div>
-                </div>
-                <div class="stat-value" id="portfolio-value">$25,480.50</div>
-                <div class="stat-sub">
-                    <span class="stat-change">↑ 2.35%</span>
-                </div>
-            </div>
-            <div class="stat-card positions">
-                <div class="stat-header">
-                    <span class="stat-label">Open Positions</span>
-                    <div class="stat-icon" style="background: rgba(0, 255, 136, 0.1); color: var(--accent-green);">📊</div>
-                </div>
-                <div class="stat-value" id="positions-count">5</div>
-                <div class="stat-sub">
-                    <span class="stat-text">Active trades</span>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Stats Grid Row 2 -->
-        <div class="stats-grid">
-            <div class="stat-card trades">
-                <div class="stat-header">
-                    <span class="stat-label">Today's Trades</span>
-                    <div class="stat-icon" style="background: rgba(255, 165, 2, 0.1); color: var(--accent-orange);">🔄</div>
-                </div>
-                <div class="stat-value" id="today-trades">12</div>
-                <div class="stat-sub">
-                    <span class="stat-text">/ 20 limit</span>
-                </div>
-            </div>
-            <div class="stat-card pnl">
-                <div class="stat-header">
-                    <span class="stat-label">Today's P&L</span>
-                    <div class="stat-icon" style="background: rgba(0, 255, 136, 0.1); color: var(--accent-green);">💰</div>
-                </div>
-                <div class="stat-value" id="today-pnl">+$485.20</div>
-                <div class="stat-sub">
-                    <span class="stat-change">↑ 1.94%</span>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Trading Controls -->
-        <div class="controls-section">
-            <div class="controls-title">
-                <i>▶️</i> Trading Controls
-            </div>
-            <div class="controls-buttons">
-                <button class="btn btn-danger" onclick="stopTrading()">
-                    <i>⏹️</i> Stop Trading
-                </button>
-                <button class="btn btn-secondary" onclick="sellAll()">
-                    <i>💸</i> Sell All
-                </button>
-            </div>
-        </div>
-    </main>
-    
-    <script>
-        async function refreshDashboard() {
-            try {
-                const response = await fetch('/api/status');
-                const data = await response.json();
-                
-                // Update values
-                const portfolio = data.portfolio || {};
-                document.getElementById('portfolio-value').textContent = 
-                    '$' + (portfolio.total_value || 25480.50).toLocaleString('en-US', {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2
-                    });
-                
-                const positions = data.tracked_positions || {};
-                document.getElementById('positions-count').textContent = Object.keys(positions).length || 5;
-                
-                const engine = data.trading_engine || {};
-                document.getElementById('today-trades').textContent = engine.today_trades || 12;
-                
-                const pnl = portfolio.daily_pnl || 485.20;
-                document.getElementById('today-pnl').textContent = (pnl >= 0 ? '+' : '') + '$' + Math.abs(pnl).toLocaleString('en-US', {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2
-                });
-                
-                // Update engine status
-                const statusText = document.getElementById('engine-status');
-                if (engine.running) {
-                    statusText.textContent = 'Engine Running (' + (engine.strategy || 'moderate') + ')';
-                } else {
-                    statusText.textContent = 'Engine Stopped';
-                }
-                
-            } catch (error) {
-                console.error('Error refreshing dashboard:', error);
-            }
+        const statusEl = document.getElementById('status');
+        if (data.trading_engine.running) {
+            statusEl.innerHTML = '<span class="status-indicator status-online"></span>Running';
+        } else {
+            statusEl.innerHTML = '<span class="status-indicator status-offline"></span>Stopped';
         }
         
-        async function stopTrading() {
-            try {
-                const response = await fetch('/api/trading/stop', {method: 'POST'});
-                const data = await response.json();
-                refreshDashboard();
-            } catch (error) {
-                console.error('Error stopping trading:', error);
-            }
-        }
+        document.getElementById('activeStrategy').textContent = data.trading_engine.strategy;
         
-        async function sellAll() {
-            if (!confirm('Sell all positions?')) return;
-            try {
-                const response = await fetch('/api/trading/sell_all', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({broker: 'all'})
-                });
-                refreshDashboard();
-            } catch (error) {
-                console.error('Error selling all:', error);
-            }
-        }
-        
-        // Auto refresh every 5 seconds
-        setInterval(refreshDashboard, 5000);
-    </script>
-</body>
-</html>
+        document.getElementById('alpacaStatus').innerHTML = data.brokers.alpaca.connected 
+            ? '<span class="status-indicator status-online"></span>Connected' 
+            : '<span class="status-indicator status-offline"></span>Disconnected';
+        document.getElementById('binanceStatus').innerHTML = data.brokers.binance.connected 
+            ? '<span class="status-indicator status-online"></span>Connected' 
+            : '<span class="status-indicator status-offline"></span>Disconnected';
+        document.getElementById('paypalStatus').innerHTML = data.brokers.paypal.connected 
+            ? '<span class="status-indicator status-online"></span>Connected' 
+            : '<span class="status-indicator status-offline"></span>Disconnected';
+    } catch (e) {}
+}
+
+async function startTrading() {
+    await fetch('/api/trading/start', {method: 'POST'});
+    loadStatus();
+}
+
+async function stopTrading() {
+    await fetch('/api/trading/stop', {method: 'POST'});
+    loadStatus();
+}
+
+loadStatus();
+setInterval(loadStatus, 5000);
+</script>
+{% endblock %}
