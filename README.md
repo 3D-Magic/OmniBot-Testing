@@ -169,7 +169,7 @@ Contributions are welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) for gu
 
 ## 📜 License
 
-This project is licensed under the MIT License - see [LICENSE](LICENSE) file.
+This project is licensed under the Personal Use License - see [LICENSE](LICENSE) file.
 
 ## 🙏 Acknowledgments
 
