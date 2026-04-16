@@ -43,24 +43,18 @@ OMNIBOT TITAN is a complete trading system that supports multiple brokers (Alpac
 ### Installation
 
 ```bash
-# Clone the repository (branch: Omnibot-v2.7.2-Titan)
-git clone --branch Omnibot-v2.7.2-Titan https://github.com/3D-Magic/OmniBot-Testing.git
-cd OmniBot-Testing
+# Clone the repository
+git clone https://github.com/yourusername/omnibot-titan.git
+cd omnibot-titan
 
 # Install Python dependencies
-# Use --break-system-packages because this Pi is a dedicated appliance
-pip install -r requirements.txt --break-system-packages
+pip install -r requirements.txt
 
-# On Raspberry Pi (Bookworm/Legacy), also install the Chromium browser for kiosk mode
-sudo apt-get install chromium-browser
+# On Raspberry Pi, also install display packages
+sudo apt-get install python3-pyqt5 python3-pyqt5.qtwebengine
 
 # Run the bot
-python3 src/app.py
-
-#If you want the full Pi deployment (systemd service, auto-login, kiosk), run the install script instead:
-cd OmniBot-Testing
-sudo bash scripts/install.sh
-sudo reboot
+python src/app.py
 ```
 
 ### Access Dashboard

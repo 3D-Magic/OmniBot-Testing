@@ -1,313 +1,100 @@
 {% extends "base.html" %}
-
-{% block title %}Positions - OMNIBOT v2.7.2{% endblock %}
-
-{% block extra_css %}
-<style>
-    .positions-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 24px;
-    }
-    
-    .position-card {
-        background: var(--bg-card);
-        border: 1px solid var(--border-color);
-        border-radius: var(--radius-lg);
-        padding: 20px;
-        transition: var(--transition);
-    }
-    
-    .position-card:hover {
-        border-color: rgba(0, 212, 255, 0.2);
-    }
-    
-    .position-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 16px;
-        padding-bottom: 16px;
-        border-bottom: 1px solid var(--border-color);
-    }
-    
-    .position-symbol {
-        font-size: 1.3em;
-        font-weight: 700;
-        font-family: var(--font-mono);
-    }
-    
-    .position-broker {
-        font-size: 0.8em;
-        color: var(--text-muted);
-        text-transform: uppercase;
-    }
-    
-    .position-pnl {
-        text-align: right;
-    }
-    
-    .position-pnl .value {
-        font-size: 1.2em;
-        font-weight: 700;
-    }
-    
-    .position-pnl .value.positive {
-        color: var(--accent-success);
-    }
-    
-    .position-pnl .value.negative {
-        color: var(--accent-danger);
-    }
-    
-    .position-pnl .label {
-        font-size: 0.75em;
-        color: var(--text-muted);
-    }
-    
-    .position-details {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 16px;
-    }
-    
-    .detail-item {
-        text-align: center;
-    }
-    
-    .detail-item .value {
-        font-size: 1.1em;
-        font-weight: 600;
-        font-family: var(--font-mono);
-    }
-    
-    .detail-item .label {
-        font-size: 0.75em;
-        color: var(--text-muted);
-        margin-top: 4px;
-    }
-    
-    .empty-state {
-        text-align: center;
-        padding: 60px 20px;
-        color: var(--text-muted);
-    }
-    
-    .empty-state i {
-        font-size: 4em;
-        margin-bottom: 20px;
-        opacity: 0.5;
-    }
-    
-    .empty-state h3 {
-        font-size: 1.3em;
-        margin-bottom: 8px;
-        color: var(--text-primary);
-    }
-    
-    @media (max-width: 1200px) {
-        .positions-grid {
-            grid-template-columns: 1fr;
-        }
-    }
-</style>
-{% endblock %}
-
 {% block content %}
-<!-- Sidebar -->
-<aside class="sidebar">
-    <div class="sidebar-header">
-        <div class="logo">
-            <div class="logo-icon">
-                <i class="fas fa-robot"></i>
-            </div>
-            <div class="logo-text">
-                <h1>OMNIBOT</h1>
-                <span>v2.7.2 Titan</span>
-            </div>
-        </div>
-    </div>
-    
-    <nav class="nav-menu">
-        <div class="nav-section">
-            <div class="nav-section-title">Main</div>
-            <a href="/" class="nav-item">
-                <i class="fas fa-chart-line"></i>
-                <span>Dashboard</span>
-            </a>
-            <a href="/positions" class="nav-item active">
-                <i class="fas fa-wallet"></i>
-                <span>Positions</span>
-            </a>
-            <a href="/orders" class="nav-item">
-                <i class="fas fa-list-alt"></i>
-                <span>Order History</span>
-            </a>
-            <a href="/graphs" class="nav-item">
-                <i class="fas fa-chart-bar"></i>
-                <span>Graphs</span>
-            </a>
-        </div>
-        
-        <div class="nav-section">
-            <div class="nav-section-title">Configuration</div>
-            <a href="/settings" class="nav-item">
-                <i class="fas fa-cog"></i>
-                <span>Settings</span>
-            </a>
-        </div>
-        
-        <div class="nav-section">
-            <div class="nav-section-title">System</div>
-            <a href="/logs" class="nav-item">
-                <i class="fas fa-terminal"></i>
-                <span>Logs</span>
-            </a>
-            <a href="/logout" class="nav-item">
-                <i class="fas fa-sign-out-alt"></i>
-                <span>Logout</span>
-            </a>
-        </div>
-    </nav>
-</aside>
+<div class="header">
+    <h2>💼 Positions</h2>
+</div>
 
-<!-- Main Content -->
-<main class="main-content">
-    <!-- Top Header -->
-    <header class="top-header">
-        <div class="header-left">
-            <h2>Positions</h2>
-            <p>Your current holdings</p>
-        </div>
-        <div class="header-right">
-            <button class="header-btn" onclick="loadPositions()" title="Refresh">
-                <i class="fas fa-sync-alt" id="refresh-icon"></i>
-            </button>
-        </div>
-    </header>
-    
-    <!-- Content Area -->
-    <div class="content">
-        <div id="positions-container">
-            <div class="empty-state">
-                <i class="fas fa-spinner fa-spin"></i>
-                <h3>Loading positions...</h3>
-            </div>
-        </div>
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-label">Open Positions</div>
+        <div class="stat-value" id="posCount">0</div>
     </div>
-</main>
+    <div class="stat-card">
+        <div class="stat-label">Total Exposure</div>
+        <div class="stat-value" id="posExposure">$0.00</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Unrealized P&L</div>
+        <div class="stat-value" id="posPnl">$0.00</div>
+    </div>
+</div>
+
+<div class="card" style="margin-top: 20px;">
+    <h3>Active Positions</h3>
+    <div style="overflow-x: auto; margin-top: 16px;">
+        <table class="data-table" id="positionsTable">
+            <thead>
+                <tr>
+                    <th>Symbol</th>
+                    <th>Broker</th>
+                    <th>Qty</th>
+                    <th>Avg Entry</th>
+                    <th>Current</th>
+                    <th>Market Value</th>
+                    <th>P&L</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td colspan="8" style="text-align:center; color: var(--text-secondary);">Loading...</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
 
 <script>
-    async function loadPositions() {
-        const refreshIcon = document.getElementById('refresh-icon');
-        refreshIcon.classList.add('fa-spin');
-        
-        try {
-            const response = await fetch('/api/positions');
-            const data = await response.json();
-            
-            const container = document.getElementById('positions-container');
-            const positions = data.tracked_positions || {};
-            const brokerPositions = data.broker_positions || {};
-            
-            // Combine positions from both sources
-            const allPositions = [];
-            
-            // Add tracked positions
-            for (const [key, pos] of Object.entries(positions)) {
-                allPositions.push({
-                    ...pos,
-                    key: key,
-                    source: 'tracked'
-                });
-            }
-            
-            // Add broker positions if not already tracked
-            for (const [broker, brokerPosList] of Object.entries(brokerPositions)) {
-                if (Array.isArray(brokerPosList)) {
-                    for (const pos of brokerPosList) {
-                        const key = `${broker}:${pos.symbol}`;
-                        if (!positions[key]) {
-                            allPositions.push({
-                                ...pos,
-                                key: key,
-                                broker: broker,
-                                source: 'broker'
-                            });
-                        }
-                    }
-                }
-            }
-            
-            if (allPositions.length === 0) {
-                container.innerHTML = `
-                    <div class="empty-state">
-                        <i class="fas fa-wallet"></i>
-                        <h3>No Positions</h3>
-                        <p>You don't have any open positions yet</p>
-                    </div>
-                `;
-            } else {
-                container.innerHTML = `
-                    <div class="positions-grid">
-                        ${allPositions.map(pos => renderPosition(pos)).join('')}
-                    </div>
-                `;
-            }
-        } catch (error) {
-            document.getElementById('positions-container').innerHTML = `
-                <div class="empty-state">
-                    <i class="fas fa-exclamation-triangle"></i>
-                    <h3>Error Loading Positions</h3>
-                    <p>${error.message}</p>
-                </div>
-            `;
+async function loadPositions() {
+    try {
+        const res = await fetch('/api/positions');
+        const data = await res.json();
+        const positions = data.tracked_positions || [];
+        const tbody = document.querySelector('#positionsTable tbody');
+
+        let exposure = 0;
+        let totalPnl = 0;
+
+        if (positions.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color: var(--text-secondary);">No open positions</td></tr>';
+        } else {
+            tbody.innerHTML = positions.map(p => {
+                const mkt = p.market_value || 0;
+                const pnl = p.unrealized_pl || 0;
+                const pnlPct = p.unrealized_plpc || 0;
+                exposure += mkt;
+                totalPnl += pnl;
+                const pnlColor = pnl >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
+                return `<tr>
+                    <td><strong>${p.symbol || p.asset || '-'}</strong></td>
+                    <td>${p.broker || '-'}</td>
+                    <td>${p.qty || 0}</td>
+                    <td>$${(p.avg_entry_price || 0).toFixed(2)}</td>
+                    <td>$${(p.current_price || 0).toFixed(2)}</td>
+                    <td>$${mkt.toFixed(2)}</td>
+                    <td style="color:${pnlColor}">$${pnl.toFixed(2)} (${pnlPct.toFixed(2)}%)</td>
+                    <td><button class="btn btn-danger" onclick="closePosition('${p.symbol || p.asset}')">Close</button></td>
+                </tr>`;
+            }).join('');
         }
-        
-        refreshIcon.classList.remove('fa-spin');
-    }
-    
-    function renderPosition(pos) {
-        const pnl = pos.unrealized_pl || 0;
-        const pnlPct = pos.unrealized_plpc || 0;
-        const isPositive = pnl >= 0;
-        
-        return `
-            <div class="position-card">
-                <div class="position-header">
-                    <div>
-                        <div class="position-symbol">${pos.symbol}</div>
-                        <div class="position-broker">${pos.broker || 'Unknown'}</div>
-                    </div>
-                    <div class="position-pnl">
-                        <div class="value ${isPositive ? 'positive' : 'negative'}">
-                            ${isPositive ? '+' : ''}$${pnl.toFixed(2)}
-                        </div>
-                        <div class="label">${isPositive ? '+' : ''}${pnlPct.toFixed(2)}%</div>
-                    </div>
-                </div>
-                <div class="position-details">
-                    <div class="detail-item">
-                        <div class="value">${pos.quantity || pos.qty || 0}</div>
-                        <div class="label">Quantity</div>
-                    </div>
-                    <div class="detail-item">
-                        <div class="value">$${(pos.entry_price || pos.avg_entry_price || 0).toFixed(2)}</div>
-                        <div class="label">Entry Price</div>
-                    </div>
-                    <div class="detail-item">
-                        <div class="value">$${(pos.current_price || pos.market_value / pos.qty || 0).toFixed(2)}</div>
-                        <div class="label">Current Price</div>
-                    </div>
-                </div>
-            </div>
-        `;
-    }
-    
-    // Load positions on page load
-    document.addEventListener('DOMContentLoaded', loadPositions);
-    
-    // Auto-refresh every 30 seconds
-    setInterval(loadPositions, 30000);
+
+        document.getElementById('posCount').textContent = positions.length;
+        document.getElementById('posExposure').textContent = '$' + exposure.toFixed(2);
+        const pnlEl = document.getElementById('posPnl');
+        pnlEl.textContent = (totalPnl >= 0 ? '+' : '') + '$' + totalPnl.toFixed(2);
+        pnlEl.style.color = totalPnl >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
+    } catch (e) {}
+}
+
+async function closePosition(symbol) {
+    if (!confirm('Close position for ' + symbol + '?')) return;
+    await fetch('/api/position/close', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({symbol})
+    });
+    loadPositions();
+}
+
+loadPositions();
+setInterval(loadPositions, 3000);
 </script>
 {% endblock %}

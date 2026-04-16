@@ -533,6 +533,12 @@ class PayPalWallet:
         except Exception as e:
             logger.error(f"PayPal balance error: {e}")
             return {'usd': 0}
+    
+    def get_positions(self):
+        return []
+    
+    def get_orders(self):
+        return []
 
 
 # ============ BALANCE AGGREGATOR ============
@@ -1360,30 +1366,6 @@ def api_charts():
         'win_loss': {'wins': engine.winning_trades, 'losses': engine.total_trades - engine.winning_trades}
     })
 
-
-@app.route('/api/logs')
-def api_logs():
-    if not session.get('logged_in'):
-        return jsonify({'success': False, 'error': 'Not authenticated'})
-    return jsonify({'logs': log_buffer.buffer[-200:]})
-
-@app.route('/api/trading/sell_all', methods=['POST'])
-def sell_all():
-    if not session.get('logged_in'):
-        return jsonify({'success': False, 'error': 'Not authenticated'})
-    results = []
-    for name, broker in balance_aggregator.brokers.items():
-        try:
-            positions = broker.get_positions()
-            for pos in positions:
-                symbol = pos.get('symbol')
-                qty = pos.get('qty', 0)
-                if qty > 0:
-                    r = broker.submit_order(symbol, qty, 'sell')
-                    results.append({'broker': name, 'symbol': symbol, 'result': r})
-        except Exception as e:
-            results.append({'broker': name, 'error': str(e)})
-    return jsonify({'success': True, 'results': results})
 
 @app.route('/api/logs')
 def api_logs():

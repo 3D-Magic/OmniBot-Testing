@@ -29,6 +29,23 @@
     </div>
 </div>
 
+<div class="stats-grid" style="margin-top: 16px;">
+    <div class="stat-card">
+        <div class="stat-label">PayPal Balance</div>
+        <div class="stat-value" id="paypalBalance">$0.00</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Broker Buying Power</div>
+        <div class="stat-value" id="brokerBuyingPower">$0.00</div>
+    </div>
+    <div class="stat-card" style="grid-column: span 2;">
+        <div class="stat-label">Funding Note</div>
+        <div style="color: var(--text-secondary); font-size: 0.85em; margin-top: 4px;">
+            Trading is executed through Alpaca/Binance. Ensure your broker account is funded — PayPal acts as your tracked wallet balance only.
+        </div>
+    </div>
+</div>
+
 <div class="card" style="margin-top: 20px;">
     <h3>Connected Brokers</h3>
     <div id="brokers" class="stats-grid" style="margin-top: 16px;">
@@ -65,6 +82,17 @@ async function loadStatus() {
         }
         
         document.getElementById('activeStrategy').textContent = data.trading_engine.strategy;
+        
+        const paypalBal = data.portfolio.balances?.paypal;
+        const paypalUsd = (paypalBal && paypalBal.usd) ? paypalBal.usd : 0;
+        document.getElementById('paypalBalance').textContent = '$' + paypalUsd.toFixed(2);
+        
+        let buyingPower = 0;
+        const alpacaBal = data.portfolio.balances?.alpaca;
+        const binanceBal = data.portfolio.balances?.binance;
+        if (alpacaBal && alpacaBal.buying_power) buyingPower += alpacaBal.buying_power;
+        if (binanceBal && binanceBal.usdt) buyingPower += binanceBal.usdt;
+        document.getElementById('brokerBuyingPower').textContent = '$' + buyingPower.toFixed(2);
         
         document.getElementById('alpacaStatus').innerHTML = data.brokers.alpaca.connected 
             ? '<span class="status-indicator status-online"></span>Connected' 

@@ -51,6 +51,8 @@ DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
     python3-full \
     python3-pyqt5 \
     python3-pyqt5.qtwebengine \
+    chromium-browser \
+    fonts-noto-color-emoji \
     xserver-xorg \
     lightdm \
     openbox \
@@ -91,7 +93,7 @@ python3 -m venv venv
 source venv/bin/activate
 
 pip install --upgrade pip -q
-pip install -q flask==3.0.0 flask-socketio==5.3.0 eventlet==0.33.3 alpaca-py==0.15.0 python-binance==1.0.19 requests==2.31.0 websocket-client==1.6.0
+pip install -q flask==3.0.0 flask-socketio==5.3.0 eventlet==0.33.3 alpaca-py==0.15.0 python-binance==1.0.19 requests==2.31.0 websocket-client==1.6.0 pandas numpy
 
 deactivate
 
@@ -99,11 +101,11 @@ deactivate
 echo -e "${CYAN}[6/10] Copying OMNIBOT files...${NC}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
-cp "$SCRIPT_DIR/src/app.py" "$INSTALL_DIR/src/"
-cp "$SCRIPT_DIR/src/kiosk.py" "$INSTALL_DIR/src/"
-cp "$SCRIPT_DIR/config/settings.json" "$INSTALL_DIR/config/"
-cp -r "$SCRIPT_DIR/templates/"* "$INSTALL_DIR/templates/"
-cp -r "$SCRIPT_DIR/static/"* "$INSTALL_DIR/static/"
+cp -f "$SCRIPT_DIR/src/app.py" "$INSTALL_DIR/src/" 2>/dev/null || true
+cp -f "$SCRIPT_DIR/src/kiosk.py" "$INSTALL_DIR/src/" 2>/dev/null || true
+cp -f "$SCRIPT_DIR/config/settings.json" "$INSTALL_DIR/config/" 2>/dev/null || true
+cp -rf "$SCRIPT_DIR/templates/"* "$INSTALL_DIR/templates/" 2>/dev/null || true
+cp -rf "$SCRIPT_DIR/static/"* "$INSTALL_DIR/static/" 2>/dev/null || true
 
 chmod +x "$INSTALL_DIR/src/app.py"
 chmod +x "$INSTALL_DIR/src/kiosk.py"
