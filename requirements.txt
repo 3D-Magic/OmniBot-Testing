@@ -17,3 +17,5 @@ websocket-client==1.6.0
 # Display (install via apt on Raspberry Pi)
 # python3-pyqt5
 # python3-pyqt5.qtwebengine
+pandas>=1.5.0
+numpy>=1.23.0

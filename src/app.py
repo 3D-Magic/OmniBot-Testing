@@ -17,7 +17,7 @@ import threading
 import time
 from datetime import datetime
 from flask import Flask, render_template, jsonify, request, session, redirect
-from flask_socketio import SocketIO
+from flask_socketio import SocketIO, emit
 
 # Setup logging
 logging.basicConfig(
@@ -54,7 +54,10 @@ class Settings:
             'dashboard_host': '0.0.0.0',
             'dashboard_port': 8081,
             'trading_enabled': False,
+            'trading_mode': 'moderate',
             'active_strategy': 'swing_trading',
+            'alpaca_watchlist': ['AAPL','MSFT','GOOGL','AMZN','TSLA'],
+            'binance_watchlist': ['BTC','ETH','BNB','SOL','ADA'],
             'brokers': {
                 'alpaca': {
                     'enabled': False,
@@ -190,22 +193,29 @@ class AlpacaBroker:
             logger.error(f"Alpaca positions error: {e}")
             return []
     
-    def submit_order(self, symbol, qty, side, order_type='market'):
+    def submit_order(self, symbol, qty, side, order_type='market', limit_price=None):
         if not self.connected:
             return {'success': False, 'error': 'Not connected'}
         try:
-            from alpaca.trading.requests import MarketOrderRequest
+            from alpaca.trading.requests import MarketOrderRequest, LimitOrderRequest
             from alpaca.trading.enums import OrderSide, TimeInForce
-            
             side_enum = OrderSide.BUY if side.lower() == 'buy' else OrderSide.SELL
-            order_request = MarketOrderRequest(
-                symbol=symbol,
-                qty=qty,
-                side=side_enum,
-                time_in_force=TimeInForce.DAY
-            )
+            if order_type.lower() == 'limit' and limit_price is not None:
+                order_request = LimitOrderRequest(
+                    symbol=symbol,
+                    qty=qty,
+                    side=side_enum,
+                    time_in_force=TimeInForce.GTC,
+                    limit_price=limit_price
+                )
+            else:
+                order_request = MarketOrderRequest(
+                    symbol=symbol,
+                    qty=qty,
+                    side=side_enum,
+                    time_in_force=TimeInForce.DAY
+                )
             order = self.trading_client.submit_order(order_request)
-            
             logger.info(f"Order submitted: {side} {qty} {symbol}")
             return {
                 'success': True,
@@ -218,6 +228,50 @@ class AlpacaBroker:
         except Exception as e:
             logger.error(f"Alpaca order error: {e}")
             return {'success': False, 'error': str(e)}
+    
+    def get_latest_price(self, symbol):
+        if not self.connected:
+            return None
+        try:
+            from alpaca.data.historical import StockHistoricalDataClient
+            from alpaca.data.requests import StockLatestQuoteRequest
+            client = StockHistoricalDataClient(self.api_key, self.secret_key)
+            req = StockLatestQuoteRequest(symbol_or_symbols=symbol)
+            quote = client.get_stock_latest_quote(req)
+            return float(quote[symbol].ap)
+        except Exception as e:
+            logger.error(f"Alpaca price error: {e}")
+            return None
+    
+    def get_bars(self, symbol, timeframe='1Min', limit=100):
+        if not self.connected:
+            try:
+                import pandas as pd
+                return pd.DataFrame()
+            except ImportError:
+                return None
+        try:
+            import pandas as pd
+            from alpaca.data.historical import StockHistoricalDataClient
+            from alpaca.data.requests import StockBarsRequest
+            from alpaca.data.timeframe import TimeFrame
+            client = StockHistoricalDataClient(self.api_key, self.secret_key)
+            tf = TimeFrame.Minute if timeframe in ('1Min','1m','1min') else TimeFrame.Hour if timeframe in ('1H','1h') else TimeFrame.Day
+            req = StockBarsRequest(symbol_or_symbols=symbol, timeframe=tf, limit=limit)
+            bars = client.get_stock_bars(req)
+            df = bars.df.reset_index()
+            if 'timestamp' in df.columns:
+                df = df.set_index('timestamp')
+            elif 'timestamp' not in df.columns and 'symbol' in df.columns:
+                df = df.drop(columns=['symbol']).set_index('timestamp')
+            return df
+        except Exception as e:
+            logger.error(f"Alpaca bars error: {e}")
+            try:
+                import pandas as pd
+                return pd.DataFrame()
+            except ImportError:
+                return None
     
     def get_orders(self, status='all'):
         if not self.connected:
@@ -340,19 +394,23 @@ class BinanceBroker:
             logger.error(f"Binance positions error: {e}")
             return []
     
-    def submit_order(self, symbol, qty, side, order_type='MARKET'):
+    def submit_order(self, symbol, qty, side, order_type='MARKET', limit_price=None):
         if not self.connected:
             return {'success': False, 'error': 'Not connected'}
         try:
             if not symbol.endswith('USDT'):
                 symbol = f"{symbol}USDT"
-            
-            order = self.client.order_market(
-                symbol=symbol,
-                side=side.upper(),
-                quantity=qty
-            )
-            
+            if order_type.upper() == 'LIMIT' and limit_price is not None:
+                if side.upper() == 'BUY':
+                    order = self.client.order_limit_buy(symbol=symbol, quantity=qty, price=limit_price)
+                else:
+                    order = self.client.order_limit_sell(symbol=symbol, quantity=qty, price=limit_price)
+            else:
+                order = self.client.order_market(
+                    symbol=symbol,
+                    side=side.upper(),
+                    quantity=qty
+                )
             logger.info(f"Binance order submitted: {side} {qty} {symbol}")
             return {
                 'success': True,
@@ -363,6 +421,42 @@ class BinanceBroker:
         except Exception as e:
             logger.error(f"Binance order error: {e}")
             return {'success': False, 'error': str(e)}
+    
+    def get_latest_price(self, symbol):
+        if not self.connected:
+            return None
+        try:
+            sym = symbol if symbol.endswith('USDT') else f"{symbol}USDT"
+            ticker = self.client.get_symbol_ticker(symbol=sym)
+            return float(ticker['price'])
+        except Exception as e:
+            logger.error(f"Binance price error: {e}")
+            return None
+    
+    def get_bars(self, symbol, interval='1m', limit=100):
+        if not self.connected:
+            try:
+                import pandas as pd
+                return pd.DataFrame()
+            except ImportError:
+                return None
+        try:
+            import pandas as pd
+            sym = symbol if symbol.endswith('USDT') else f"{symbol}USDT"
+            klines = self.client.get_klines(symbol=sym, interval=interval, limit=limit)
+            df = pd.DataFrame(klines, columns=['open_time','open','high','low','close','volume','close_time','quote_asset_volume','number_of_trades','taker_buy_base_asset_volume','taker_buy_quote_asset_volume','ignore'])
+            for col in ['open','high','low','close','volume']:
+                df[col] = df[col].astype(float)
+            df['open_time'] = pd.to_datetime(df['open_time'], unit='ms')
+            df = df.set_index('open_time')
+            return df
+        except Exception as e:
+            logger.error(f"Binance bars error: {e}")
+            try:
+                import pandas as pd
+                return pd.DataFrame()
+            except ImportError:
+                return None
     
     def get_orders(self, symbol=None):
         if not self.connected:
@@ -514,24 +608,30 @@ class BalanceAggregator:
 
 # ============ TRADING ENGINE ============
 class TradingEngine:
-    """Main trading engine"""
+    """Main trading engine with indicator-driven automated trading"""
     
     def __init__(self, balance_aggregator, settings):
         self.balance_aggregator = balance_aggregator
         self.settings = settings
         self.running = False
         self.thread = None
+        self.monitor_thread = None
         self.daily_pnl = 0
         self.total_trades = 0
         self.winning_trades = 0
         self.positions = {}
         self.orders = []
+        self.trade_history = []
+        self.last_trade_time = {}
+        self.open_orders = {}
     
     def start(self):
         if not self.running:
             self.running = True
             self.thread = threading.Thread(target=self._trading_loop, daemon=True)
             self.thread.start()
+            self.monitor_thread = threading.Thread(target=self._monitor_positions, daemon=True)
+            self.monitor_thread.start()
             logger.info("Trading engine started")
     
     def stop(self):
@@ -548,35 +648,216 @@ class TradingEngine:
             'win_rate': (self.winning_trades / self.total_trades * 100) if self.total_trades > 0 else 0
         }
     
+    def _get_broker(self):
+        alpaca = self.balance_aggregator.brokers.get('alpaca')
+        if alpaca and alpaca.connected:
+            return alpaca, 'alpaca'
+        binance = self.balance_aggregator.brokers.get('binance')
+        if binance and binance.connected:
+            return binance, 'binance'
+        return None, None
+    
+    def _get_watchlist(self):
+        broker, name = self._get_broker()
+        if name == 'alpaca':
+            return self.settings.get('alpaca_watchlist', ['AAPL','MSFT','GOOGL','AMZN','TSLA'])
+        if name == 'binance':
+            return self.settings.get('binance_watchlist', ['BTC','ETH','BNB','SOL','ADA'])
+        return []
+    
     def _trading_loop(self):
         while self.running:
             try:
-                time.sleep(5)
+                self._evaluate_strategies()
+                mode = self.settings.get('trading_mode', 'moderate')
+                sleep_times = {'conservative': 300, 'moderate': 120, 'aggressive': 60, 'hft': 30}
+                time.sleep(sleep_times.get(mode, 120))
             except Exception as e:
                 logger.error(f"Trading loop error: {e}")
-                time.sleep(5)
+                time.sleep(60)
+    
+    def _evaluate_strategies(self):
+        broker, broker_name = self._get_broker()
+        if not broker:
+            return
+        watchlist = self._get_watchlist()
+        mode = self.settings.get('trading_mode', 'moderate')
+        thresholds = {'conservative': 0.65, 'moderate': 0.55, 'aggressive': 0.45, 'hft': 0.40}
+        threshold = thresholds.get(mode, 0.55)
+        cooldown = 60 if mode == 'hft' else 300
+        for symbol in watchlist:
+            if time.time() - self.last_trade_time.get(symbol, 0) < cooldown:
+                continue
+            signal = self._analyze_symbol(broker, symbol)
+            if signal and signal['confidence'] >= threshold:
+                self._execute_trade(broker, broker_name, signal)
+    
+    def _analyze_symbol(self, broker, symbol):
+        try:
+            bars = broker.get_bars(symbol, '1Min', 100)
+            if bars is None or getattr(bars, 'empty', True) or len(bars) < 50:
+                return None
+            bars = self._calculate_indicators(bars)
+            current = bars.iloc[-1]
+            prev = bars.iloc[-2]
+            price = broker.get_latest_price(symbol)
+            if not price:
+                return None
+            signals = []
+            if prev.get('sma_20',0) <= prev.get('sma_50',0) and current.get('sma_20',0) > current.get('sma_50',0):
+                signals.append(('ma_crossover','buy',0.6))
+            elif prev.get('sma_20',0) >= prev.get('sma_50',0) and current.get('sma_20',0) < current.get('sma_50',0):
+                signals.append(('ma_crossover','sell',0.6))
+            if prev.get('macd',0) <= prev.get('macd_signal',0) and current.get('macd',0) > current.get('macd_signal',0):
+                signals.append(('macd','buy',0.55))
+            elif prev.get('macd',0) >= prev.get('macd_signal',0) and current.get('macd',0) < current.get('macd_signal',0):
+                signals.append(('macd','sell',0.55))
+            if current.get('rsi',50) < 30:
+                signals.append(('rsi_oversold','buy',0.5))
+            elif current.get('rsi',50) > 70:
+                signals.append(('rsi_overbought','sell',0.5))
+            if current['close'] < current.get('bb_lower',0):
+                signals.append(('bb_lower','buy',0.45))
+            elif current['close'] > current.get('bb_upper',0):
+                signals.append(('bb_upper','sell',0.45))
+            if current.get('roc',0) > 2:
+                signals.append(('roc_positive','buy',0.5))
+            elif current.get('roc',0) < -2:
+                signals.append(('roc_negative','sell',0.5))
+            buy_sigs = [s for s in signals if s[1]=='buy']
+            sell_sigs = [s for s in signals if s[1]=='sell']
+            if len(buy_sigs) >= 2 and len(buy_sigs) > len(sell_sigs):
+                avg_conf = sum(s[2] for s in buy_sigs) / len(buy_sigs)
+                return {'symbol': symbol, 'direction': 'buy', 'confidence': avg_conf, 'price': price, 'signals': [s[0] for s in buy_sigs]}
+            elif len(sell_sigs) >= 2 and len(sell_sigs) > len(buy_sigs):
+                avg_conf = sum(s[2] for s in sell_sigs) / len(sell_sigs)
+                return {'symbol': symbol, 'direction': 'sell', 'confidence': avg_conf, 'price': price, 'signals': [s[0] for s in sell_sigs]}
+            return None
+        except Exception as e:
+            logger.error(f"Analyze error {symbol}: {e}")
+            return None
+    
+    def _calculate_indicators(self, bars):
+        if bars is None or getattr(bars, 'empty', True):
+            return bars
+        bars['sma_20'] = bars['close'].rolling(window=20, min_periods=1).mean()
+        bars['sma_50'] = bars['close'].rolling(window=50, min_periods=1).mean()
+        bars['ema_12'] = bars['close'].ewm(span=12, adjust=False).mean()
+        bars['ema_26'] = bars['close'].ewm(span=26, adjust=False).mean()
+        bars['macd'] = bars['ema_12'] - bars['ema_26']
+        bars['macd_signal'] = bars['macd'].ewm(span=9, adjust=False).mean()
+        bars['macd_hist'] = bars['macd'] - bars['macd_signal']
+        delta = bars['close'].diff()
+        gain = delta.where(delta > 0, 0).rolling(window=14, min_periods=1).mean()
+        loss = (-delta.where(delta < 0, 0)).rolling(window=14, min_periods=1).mean()
+        rs = gain / loss
+        bars['rsi'] = 100 - (100 / (1 + rs))
+        bars['roc'] = bars['close'].pct_change(periods=10) * 100
+        bars['bb_middle'] = bars['close'].rolling(window=20, min_periods=1).mean()
+        bb_std = bars['close'].rolling(window=20, min_periods=1).std()
+        bars['bb_upper'] = bars['bb_middle'] + (bb_std * 2)
+        bars['bb_lower'] = bars['bb_middle'] - (bb_std * 2)
+        return bars
+    
+    def _calculate_position_size(self, broker, broker_name, symbol, price):
+        try:
+            bal = broker.get_balance()
+            portfolio_value = 0
+            buying_power = 0
+            if isinstance(bal, dict):
+                if 'portfolio_value' in bal:
+                    portfolio_value = bal['portfolio_value']
+                    buying_power = bal.get('buying_power', portfolio_value)
+                elif 'usdt' in bal:
+                    portfolio_value = bal['usdt']
+                    buying_power = bal['usdt']
+            if portfolio_value <= 0:
+                return 0
+            positions = broker.get_positions()
+            if len(positions) >= 10:
+                return 0
+            for p in positions:
+                if p.get('symbol') == symbol:
+                    return 0
+            risk = self.settings.get('risk', {})
+            max_pos_pct = risk.get('max_position_pct', 10.0) / 100.0
+            max_position_value = portfolio_value * max_pos_pct
+            position_value = min(max_position_value, buying_power * 0.95)
+            if broker_name == 'alpaca':
+                qty = int(position_value / price)
+            else:
+                qty = position_value / price
+            if qty <= 0:
+                return 0
+            return qty
+        except Exception as e:
+            logger.error(f"Position size error: {e}")
+            return 0
+    
+    def _execute_trade(self, broker, broker_name, signal):
+        symbol = signal['symbol']
+        direction = signal['direction']
+        confidence = signal['confidence']
+        price = signal['price']
+        logger.info(f"Trade signal: {direction.upper()} {symbol} (confidence: {confidence:.2f})")
+        try:
+            if direction == 'buy':
+                qty = self._calculate_position_size(broker, broker_name, symbol, price)
+                if qty > 0:
+                    result = broker.submit_order(symbol, qty, 'buy')
+                    if result.get('success'):
+                        self.last_trade_time[symbol] = time.time()
+                        self.total_trades += 1
+                        self.orders.append({'broker': broker_name, 'symbol': symbol, 'qty': qty, 'side': 'buy', 'price': price, 'confidence': confidence, 'timestamp': datetime.now().isoformat(), **result})
+                        tp_pct = self.settings.get('risk', {}).get('take_profit_pct', 10.0)
+                        tp_price = round(price * (1 + tp_pct/100), 2)
+                        tp_result = broker.submit_order(symbol, qty, 'sell', 'limit', limit_price=tp_price)
+                        if tp_result.get('success'):
+                            self.open_orders[symbol] = {'tp_order_id': tp_result.get('order_id'), 'tp_price': tp_price, 'entry_price': price}
+                        logger.info(f"BUY executed: {qty} {symbol} @ ${price:.2f}")
+            elif direction == 'sell':
+                positions = broker.get_positions()
+                pos = next((p for p in positions if p.get('symbol') == symbol), None)
+                if pos and pos.get('qty',0) > 0:
+                    qty = pos['qty']
+                    result = broker.submit_order(symbol, qty, 'sell')
+                    if result.get('success'):
+                        self.last_trade_time[symbol] = time.time()
+                        self.total_trades += 1
+                        self.orders.append({'broker': broker_name, 'symbol': symbol, 'qty': qty, 'side': 'sell', 'price': price, 'confidence': confidence, 'timestamp': datetime.now().isoformat(), **result})
+                        logger.info(f"SELL executed: {qty} {symbol} @ ${price:.2f}")
+        except Exception as e:
+            logger.error(f"Execute trade error: {e}")
+    
+    def _monitor_positions(self):
+        while self.running:
+            try:
+                broker, broker_name = self._get_broker()
+                if broker:
+                    positions = broker.get_positions()
+                    sl_pct = self.settings.get('risk', {}).get('stop_loss_pct', 5.0)
+                    for pos in positions:
+                        symbol = pos.get('symbol')
+                        qty = pos.get('qty',0)
+                        unrealized_plpc = pos.get('unrealized_plpc',0)
+                        if unrealized_plpc < -sl_pct:
+                            logger.warning(f"Stop-loss triggered for {symbol}: {unrealized_plpc:.2f}%")
+                            broker.submit_order(symbol, qty, 'sell')
+                time.sleep(30)
+            except Exception as e:
+                logger.error(f"Monitor error: {e}")
+                time.sleep(30)
     
     def submit_order(self, broker_name, symbol, qty, side, order_type='market', **kwargs):
         broker = self.balance_aggregator.brokers.get(broker_name)
         if not broker:
             return {'success': False, 'error': f'Broker {broker_name} not found'}
-        
         if not broker.connected:
             return {'success': False, 'error': f'Broker {broker_name} not connected - check API keys'}
-        
         result = broker.submit_order(symbol, qty, side, order_type, **kwargs)
-        
         if result.get('success'):
             self.total_trades += 1
-            self.orders.append({
-                'broker': broker_name,
-                'symbol': symbol,
-                'qty': qty,
-                'side': side,
-                'timestamp': datetime.now().isoformat(),
-                **result
-            })
-        
+            self.orders.append({'broker': broker_name, 'symbol': symbol, 'qty': qty, 'side': side, 'timestamp': datetime.now().isoformat(), **result})
         return result
     
     def get_orders(self, broker_name=None):
@@ -585,7 +866,6 @@ class TradingEngine:
             if broker:
                 return broker.get_orders()
             return []
-        
         all_orders = []
         for name, broker in self.balance_aggregator.brokers.items():
             try:
@@ -839,6 +1119,22 @@ KEYBOARD_HTML = """
 """
 
 
+# In-memory log buffer for /api/logs
+class LogBufferHandler(logging.Handler):
+    def __init__(self, capacity=500):
+        super().__init__()
+        self.capacity = capacity
+        self.buffer = []
+    def emit(self, record):
+        msg = self.format(record)
+        self.buffer.append({'time': datetime.fromtimestamp(record.created).isoformat(), 'level': record.levelname.lower(), 'message': msg})
+        if len(self.buffer) > self.capacity:
+            self.buffer.pop(0)
+
+log_buffer = LogBufferHandler(capacity=500)
+log_buffer.setFormatter(logging.Formatter('[%(asctime)s] [%(name)s] [%(levelname)s] %(message)s'))
+logging.getLogger().addHandler(log_buffer)
+
 # ============ FLASK APP ============
 app = Flask(__name__, 
     template_folder=os.path.join(os.path.dirname(__file__), '..', 'templates'),
@@ -898,11 +1194,12 @@ def inject_touch_keyboard(response):
     if response.content_type == 'text/html; charset=utf-8':
         try:
             text = response.get_data(as_text=True)
-            if '</body>' in text:
-                text = text.replace('</body>', KEYBOARD_HTML + '</body>')
-            else:
-                text = text + KEYBOARD_HTML
-            response.set_data(text)
+            if text and 'id="omni-keyboard"' not in text:
+                if '</body>' in text:
+                    text = text.replace('</body>', KEYBOARD_HTML + '</body>')
+                else:
+                    text = text + KEYBOARD_HTML
+                response.set_data(text)
         except Exception:
             pass
     return response
@@ -1063,6 +1360,54 @@ def api_charts():
         'win_loss': {'wins': engine.winning_trades, 'losses': engine.total_trades - engine.winning_trades}
     })
 
+
+@app.route('/api/logs')
+def api_logs():
+    if not session.get('logged_in'):
+        return jsonify({'success': False, 'error': 'Not authenticated'})
+    return jsonify({'logs': log_buffer.buffer[-200:]})
+
+@app.route('/api/trading/sell_all', methods=['POST'])
+def sell_all():
+    if not session.get('logged_in'):
+        return jsonify({'success': False, 'error': 'Not authenticated'})
+    results = []
+    for name, broker in balance_aggregator.brokers.items():
+        try:
+            positions = broker.get_positions()
+            for pos in positions:
+                symbol = pos.get('symbol')
+                qty = pos.get('qty', 0)
+                if qty > 0:
+                    r = broker.submit_order(symbol, qty, 'sell')
+                    results.append({'broker': name, 'symbol': symbol, 'result': r})
+        except Exception as e:
+            results.append({'broker': name, 'error': str(e)})
+    return jsonify({'success': True, 'results': results})
+
+@app.route('/api/logs')
+def api_logs():
+    if not session.get('logged_in'):
+        return jsonify({'success': False, 'error': 'Not authenticated'})
+    return jsonify({'logs': log_buffer.buffer[-200:]})
+
+@app.route('/api/trading/sell_all', methods=['POST'])
+def sell_all():
+    if not session.get('logged_in'):
+        return jsonify({'success': False, 'error': 'Not authenticated'})
+    results = []
+    for name, broker in balance_aggregator.brokers.items():
+        try:
+            positions = broker.get_positions()
+            for pos in positions:
+                symbol = pos.get('symbol')
+                qty = pos.get('qty', 0)
+                if qty > 0:
+                    r = broker.submit_order(symbol, qty, 'sell')
+                    results.append({'broker': name, 'symbol': symbol, 'result': r})
+        except Exception as e:
+            results.append({'broker': name, 'error': str(e)})
+    return jsonify({'success': True, 'results': results})
 
 # ============ ORDER EXECUTION API ============
 @app.route('/api/order/submit', methods=['POST'])

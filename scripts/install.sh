@@ -134,8 +134,9 @@ EOF
 
 cat > /etc/systemd/system/omnibot-kiosk.service << EOF
 [Unit]
-Description=OMNIBOT TITAN Kiosk Display
+Description=OMNIBOT Dashboard Kiosk
 After=omnibot.service graphical.target
+Wants=omnibot.service
 
 [Service]
 Type=simple
@@ -143,8 +144,8 @@ User=$USER
 Environment=DISPLAY=:0
 Environment=XAUTHORITY=/home/$USER/.Xauthority
 Environment=OMNIBOT_URL=http://localhost:8081
-ExecStartPre=/bin/sleep 15
-ExecStart=/usr/bin/python3 $INSTALL_DIR/src/kiosk.py
+ExecStartPre=/bin/sleep 10
+ExecStart=/usr/bin/chromium-browser --kiosk http://localhost:8081 --incognito --disable-session-crashed-bubble --disable-infobars --no-first-run --no-default-browser-check --enable-features=VirtualKeyboard,TouchpadAndTouchscreen --touch-events=enabled
 Restart=on-failure
 RestartSec=5
 

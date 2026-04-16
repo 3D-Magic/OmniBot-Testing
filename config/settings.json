@@ -54,5 +54,20 @@
       "enabled": false,
       "allocation": 10
     }
-  }
+  },
+  "trading_mode": "moderate",
+  "alpaca_watchlist": [
+    "AAPL",
+    "MSFT",
+    "GOOGL",
+    "AMZN",
+    "TSLA"
+  ],
+  "binance_watchlist": [
+    "BTC",
+    "ETH",
+    "BNB",
+    "SOL",
+    "ADA"
+  ]
 }
