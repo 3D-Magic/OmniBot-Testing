@@ -48,16 +48,16 @@ git clone --branch Omnibot-v2.7.2-Titan https://github.com/3D-Magic/OmniBot-Test
 cd OmniBot-Testing
 
 # Install Python dependencies
-pip install -r requirements.txt
+# Use --break-system-packages because this Pi is a dedicated appliance
+pip install -r requirements.txt --break-system-packages
 
 # On Raspberry Pi (Bookworm/Legacy), also install the Chromium browser for kiosk mode
 sudo apt-get install chromium-browser
 
 # Run the bot
-python src/app.py
+python3 src/app.py
 
 #If you want the full Pi deployment (systemd service, auto-login, kiosk), run the install script instead:
-
 cd OmniBot-Testing
 sudo bash scripts/install.sh
 sudo reboot
