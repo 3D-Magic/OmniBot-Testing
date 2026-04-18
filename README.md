@@ -10,6 +10,8 @@ OMNIBOT TITAN is a complete trading system that supports multiple brokers (Alpac
 
 ![Dashboard Preview](docs/images/dashboard-preview.png)
 
+<img width="1263" height="659" alt="image" src="https://github.com/user-attachments/assets/1e8a870d-e872-49da-9162-0eedfaedcab7" />
+
 ## ✨ Features
 
 ### Trading
@@ -169,7 +171,7 @@ Contributions are welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) for gu
 
 ## 📜 License
 
-This project is licensed under the MIT License - see [LICENSE](LICENSE) file.
+This project is licensed under the Personal Use License - see [LICENSE](LICENSE) file.
 
 ## 🙏 Acknowledgments
 
