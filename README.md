@@ -165,10 +165,6 @@ omnibot-titan/
 - Monitor positions regularly
 - Never risk more than you can afford to lose
 
-## 🤝 Contributing
-
-Contributions are welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
-
 ## 📜 License
 
 This project is licensed under the Personal Use License - see [LICENSE](LICENSE) file.
