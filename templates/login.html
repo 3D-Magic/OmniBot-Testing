@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="login-container">
+    <div class="login-box">
+        <div class="login-logo">🤖</div>
+        <h1>OMNIBOT TITAN</h1>
+        <p>v2.7.2 Professional Trading Bot</p>
+        <form id="loginForm">
+            <input type="text" id="username" name="username" placeholder="Username" value="admin" autocomplete="username">
+            <input type="password" id="password" name="password" placeholder="Password" value="admin" autocomplete="current-password">
+            <button type="submit" class="btn btn-primary">🔐 Login</button>
+        </form>
+        <div class="error-msg" id="errorMsg">Invalid credentials</div>
+        <p class="login-hint">Default: admin / admin</p>
+    </div>
+</div>
+<script>
+document.getElementById('loginForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const username = document.getElementById('username').value;
+    const password = document.getElementById('password').value;
+    try {
+        const res = await fetch('/login', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({username, password})
+        });
+        const data = await res.json();
+        if (data.success) {
+            window.location.href = '/';
+        } else {
+            document.getElementById('errorMsg').style.display = 'block';
+        }
+    } catch (err) {
+        document.getElementById('errorMsg').textContent = 'Connection error';
+        document.getElementById('errorMsg').style.display = 'block';
+    }
+});
+document.getElementById('username').focus();
+</script>
+{% endblock %}

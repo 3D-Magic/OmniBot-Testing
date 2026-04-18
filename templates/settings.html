@@ -1,0 +1,222 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="header">
+    <h2>⚙️ Settings</h2>
+</div>
+
+<div class="card">
+    <h3>🔑 Alpaca API Keys</h3>
+    <div class="form-section">
+        <label class="form-label">API Key</label>
+        <input type="text" id="alpacaApiKey" placeholder="PK...">
+        
+        <label class="form-label">Secret Key</label>
+        <input type="password" id="alpacaSecretKey" placeholder="Enter secret key">
+        
+        <label class="form-label">Mode</label>
+        <select id="alpacaPaper">
+            <option value="true">Paper Trading (Test)</option>
+            <option value="false">Live Trading (Real Money)</option>
+        </select>
+        
+        <label class="checkbox-label">
+            <input type="checkbox" id="alpacaEnabled">
+            <span>Enable Alpaca</span>
+        </label>
+    </div>
+</div>
+
+<div class="card">
+    <h3>🔑 Binance API Keys</h3>
+    <div class="form-section">
+        <label class="form-label">API Key</label>
+        <input type="text" id="binanceApiKey" placeholder="Enter API key">
+        
+        <label class="form-label">Secret Key</label>
+        <input type="password" id="binanceSecretKey" placeholder="Enter secret key">
+        
+        <label class="form-label">Mode</label>
+        <select id="binanceTestnet">
+            <option value="true">Testnet (Test)</option>
+            <option value="false">Live Trading (Real Money)</option>
+        </select>
+        
+        <label class="checkbox-label">
+            <input type="checkbox" id="binanceEnabled">
+            <span>Enable Binance</span>
+        </label>
+    </div>
+</div>
+
+<div class="card">
+    <h3>🔑 PayPal Wallet</h3>
+    <p style="color: var(--text-secondary); font-size: 0.85em; margin-bottom: 12px;">
+        PayPal is used to display your available wallet balance. All actual trading is executed through Alpaca or Binance. Make sure your broker accounts are funded separately.
+    </p>
+    <div class="form-section">
+        <label class="form-label">Client ID</label>
+        <input type="text" id="paypalClientId" placeholder="Enter client ID">
+        
+        <label class="form-label">Client Secret</label>
+        <input type="password" id="paypalClientSecret" placeholder="Enter client secret">
+        
+        <label class="form-label">Mode</label>
+        <select id="paypalSandbox">
+            <option value="true">Sandbox (Test)</option>
+            <option value="false">Live (Real Money)</option>
+        </select>
+        
+        <label class="checkbox-label">
+            <input type="checkbox" id="paypalEnabled">
+            <span>Enable PayPal Balance Tracking</span>
+        </label>
+    </div>
+</div>
+
+<div class="card">
+    <h3>⚠️ Risk Management</h3>
+    <div class="form-grid">
+        <div>
+            <label class="form-label">Stop Loss (%)</label>
+            <input type="number" id="stopLoss" value="5" step="0.1">
+        </div>
+        <div>
+            <label class="form-label">Take Profit (%)</label>
+            <input type="number" id="takeProfit" value="10" step="0.1">
+        </div>
+        <div>
+            <label class="form-label">Max Position Size (%)</label>
+            <input type="number" id="maxPosition" value="10" step="0.1">
+        </div>
+        <div>
+            <label class="form-label">Max Daily Loss ($)</label>
+            <input type="number" id="maxDailyLoss" value="100" step="1">
+        </div>
+    </div>
+</div>
+
+<div class="button-group">
+    <button class="btn btn-success" onclick="saveSettings()">💾 Save Settings</button>
+    <button class="btn btn-primary" onclick="testConnections()">🔄 Test Connections</button>
+</div>
+
+<div id="saveResult" style="margin-top: 16px;"></div>
+
+<script>
+async function loadSettings() {
+    try {
+        const res = await fetch('/api/settings');
+        const data = await res.json();
+        
+        if (data.brokers && data.brokers.alpaca) {
+            document.getElementById('alpacaApiKey').value = data.brokers.alpaca.api_key || '';
+            document.getElementById('alpacaSecretKey').value = data.brokers.alpaca.secret_key || '';
+            document.getElementById('alpacaPaper').value = data.brokers.alpaca.paper ? 'true' : 'false';
+            document.getElementById('alpacaEnabled').checked = data.brokers.alpaca.enabled || false;
+        }
+        
+        if (data.brokers && data.brokers.binance) {
+            document.getElementById('binanceApiKey').value = data.brokers.binance.api_key || '';
+            document.getElementById('binanceSecretKey').value = data.brokers.binance.secret_key || '';
+            document.getElementById('binanceTestnet').value = data.brokers.binance.testnet ? 'true' : 'false';
+            document.getElementById('binanceEnabled').checked = data.brokers.binance.enabled || false;
+        }
+        
+        if (data.brokers && data.brokers.paypal) {
+            document.getElementById('paypalClientId').value = data.brokers.paypal.client_id || '';
+            document.getElementById('paypalClientSecret').value = data.brokers.paypal.client_secret || '';
+            document.getElementById('paypalSandbox').value = data.brokers.paypal.sandbox ? 'true' : 'false';
+            document.getElementById('paypalEnabled').checked = data.brokers.paypal.enabled || false;
+        }
+        
+        if (data.risk) {
+            document.getElementById('stopLoss').value = data.risk.stop_loss_pct || 5;
+            document.getElementById('takeProfit').value = data.risk.take_profit_pct || 10;
+            document.getElementById('maxPosition').value = data.risk.max_position_pct || 10;
+            document.getElementById('maxDailyLoss').value = data.risk.max_daily_loss || 100;
+        }
+    } catch (e) {
+        console.error('Error loading settings:', e);
+    }
+}
+
+async function saveSettings() {
+    const settings = {
+        brokers: {
+            alpaca: {
+                api_key: document.getElementById('alpacaApiKey').value,
+                secret_key: document.getElementById('alpacaSecretKey').value,
+                paper: document.getElementById('alpacaPaper').value === 'true',
+                enabled: document.getElementById('alpacaEnabled').checked
+            },
+            binance: {
+                api_key: document.getElementById('binanceApiKey').value,
+                secret_key: document.getElementById('binanceSecretKey').value,
+                testnet: document.getElementById('binanceTestnet').value === 'true',
+                enabled: document.getElementById('binanceEnabled').checked
+            },
+            paypal: {
+                client_id: document.getElementById('paypalClientId').value,
+                client_secret: document.getElementById('paypalClientSecret').value,
+                sandbox: document.getElementById('paypalSandbox').value === 'true',
+                enabled: document.getElementById('paypalEnabled').checked
+            }
+        },
+        risk: {
+            stop_loss_pct: parseFloat(document.getElementById('stopLoss').value),
+            take_profit_pct: parseFloat(document.getElementById('takeProfit').value),
+            max_position_pct: parseFloat(document.getElementById('maxPosition').value),
+            max_daily_loss: parseFloat(document.getElementById('maxDailyLoss').value)
+        }
+    };
+    
+    try {
+        const res = await fetch('/api/settings', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(settings)
+        });
+        const data = await res.json();
+        
+        if (data.success) {
+            document.getElementById('saveResult').innerHTML = '<span style="color: var(--accent-green);">✅ Settings saved successfully!</span>';
+        } else {
+            document.getElementById('saveResult').innerHTML = '<span style="color: var(--accent-red);">❌ Failed to save settings</span>';
+        }
+    } catch (e) {
+        document.getElementById('saveResult').innerHTML = '<span style="color: var(--accent-red);">❌ Connection error</span>';
+    }
+}
+
+async function testConnections() {
+    document.getElementById('saveResult').innerHTML = '<span style="color: var(--accent-cyan);">🔄 Testing connections...</span>';
+    
+    try {
+        const res = await fetch('/api/status');
+        const data = await res.json();
+        
+        let html = '<div style="margin-top: 10px;">';
+        html += '<h4 style="color: var(--text-secondary); margin-bottom: 8px;">Connection Status:</h4>';
+        
+        html += data.brokers.alpaca.connected 
+            ? '<div style="color: var(--accent-green);">✅ Alpaca: Connected</div>'
+            : '<div style="color: var(--accent-red);">❌ Alpaca: Not Connected</div>';
+        
+        html += data.brokers.binance.connected 
+            ? '<div style="color: var(--accent-green);">✅ Binance: Connected</div>'
+            : '<div style="color: var(--accent-red);">❌ Binance: Not Connected</div>';
+        
+        html += data.brokers.paypal.connected 
+            ? '<div style="color: var(--accent-green);">✅ PayPal: Connected</div>'
+            : '<div style="color: var(--accent-red);">❌ PayPal: Not Connected</div>';
+        
+        html += '</div>';
+        document.getElementById('saveResult').innerHTML = html;
+    } catch (e) {
+        document.getElementById('saveResult').innerHTML = '<span style="color: var(--accent-red);">❌ Failed to test connections</span>';
+    }
+}
+
+loadSettings();
+</script>
+{% endblock %}

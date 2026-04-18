@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="header">
+    <h2>📈 Graphs</h2>
+</div>
+
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-label">Total Return</div>
+        <div class="stat-value" id="totalReturn">0%</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Win Rate</div>
+        <div class="stat-value" id="winRate">0%</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Wins</div>
+        <div class="stat-value" id="winCount" style="color: var(--accent-green);">0</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Losses</div>
+        <div class="stat-value" id="lossCount" style="color: var(--accent-red);">0</div>
+    </div>
+</div>
+
+<div class="card" style="margin-top: 20px;">
+    <h3>Portfolio Value</h3>
+    <div style="position: relative; height: 300px; margin-top: 16px;">
+        <canvas id="portfolioChart"></canvas>
+    </div>
+</div>
+
+<div class="card" style="margin-top: 20px;">
+    <h3>P&L History</h3>
+    <div style="position: relative; height: 300px; margin-top: 16px;">
+        <canvas id="pnlChart"></canvas>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+Chart.defaults.color = '#8b8b9a';
+Chart.defaults.borderColor = '#1e1e28';
+
+let portfolioChart, pnlChart;
+
+function initCharts() {
+    const ctxP = document.getElementById('portfolioChart').getContext('2d');
+    portfolioChart = new Chart(ctxP, {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: [{
+                label: 'Portfolio Value',
+                data: [],
+                borderColor: '#00d4ff',
+                backgroundColor: 'rgba(0,212,255,0.1)',
+                fill: true,
+                tension: 0.4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                y: { beginAtZero: false, grid: { color: '#1e1e28' } },
+                x: { grid: { display: false } }
+            }
+        }
+    });
+
+    const ctxPnL = document.getElementById('pnlChart').getContext('2d');
+    pnlChart = new Chart(ctxPnL, {
+        type: 'bar',
+        data: {
+            labels: [],
+            datasets: [{
+                label: 'P&L',
+                data: [],
+                backgroundColor: [],
+                borderRadius: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                y: { grid: { color: '#1e1e28' } },
+                x: { grid: { display: false } }
+            }
+        }
+    });
+}
+
+async function loadCharts() {
+    try {
+        const res = await fetch('/api/charts/data');
+        const data = await res.json();
+
+        document.getElementById('totalReturn').textContent = (data.total_return || 0) + '%';
+        document.getElementById('winRate').textContent = (data.win_rate || 0) + '%';
+        document.getElementById('winCount').textContent = data.win_loss?.wins || 0;
+        document.getElementById('lossCount').textContent = data.win_loss?.losses || 0;
+
+        if (portfolioChart) {
+            portfolioChart.data.labels = data.portfolio?.labels || [];
+            portfolioChart.data.datasets[0].data = data.portfolio?.values || [];
+            portfolioChart.update();
+        }
+        if (pnlChart) {
+            pnlChart.data.labels = data.pnl?.labels || [];
+            pnlChart.data.datasets[0].data = data.pnl?.values || [];
+            pnlChart.data.datasets[0].backgroundColor = (data.pnl?.values || []).map(v => v >= 0 ? '#00ff88' : '#ff4757');
+            pnlChart.update();
+        }
+    } catch (e) {}
+}
+
+initCharts();
+loadCharts();
+setInterval(loadCharts, 5000);
+</script>
+{% endblock %}

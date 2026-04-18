@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="header">
+    <h2>📊 Dashboard</h2>
+    <div>
+        <button class="btn btn-success" id="startBtn" onclick="startTrading()">▶️ Start Trading</button>
+        <button class="btn btn-danger" id="stopBtn" onclick="stopTrading()">⏹️ Stop</button>
+    </div>
+</div>
+
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-label">Total Portfolio Value</div>
+        <div class="stat-value" id="totalValue">$0.00</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Daily P&L</div>
+        <div class="stat-value" id="dailyPnl">+$0.00</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Trading Status</div>
+        <div class="stat-value" id="status">
+            <span class="status-indicator status-offline"></span>Stopped
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Active Strategy</div>
+        <div class="stat-value" id="activeStrategy">Swing Trading</div>
+    </div>
+</div>
+
+<div class="stats-grid" style="margin-top: 16px;">
+    <div class="stat-card">
+        <div class="stat-label">Alpaca (Paper)</div>
+        <div class="stat-value" id="alpacaValue">$0.00</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Binance (Testnet)</div>
+        <div class="stat-value" id="binanceValue">$0.00</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">PayPal Balance</div>
+        <div class="stat-value" id="paypalBalance">$0.00</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Mode</div>
+        <div style="color: var(--text-secondary); font-size: 0.85em; margin-top: 4px;">
+            Alpaca=Paper, Binance=Testnet, PayPal=Wallet
+        </div>
+    </div>
+</div>
+
+<div class="card" style="margin-top: 20px;">
+    <h3>Connected Brokers</h3>
+    <div id="brokers" class="stats-grid" style="margin-top: 16px;">
+        <div class="stat-card">
+            <div class="stat-label">Alpaca</div>
+            <div id="alpacaStatus"><span class="status-indicator status-offline"></span>Disconnected</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Binance</div>
+            <div id="binanceStatus"><span class="status-indicator status-offline"></span>Disconnected</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">PayPal</div>
+            <div id="paypalStatus"><span class="status-indicator status-offline"></span>Disconnected</div>
+        </div>
+    </div>
+</div>
+
+<script>
+async function loadStatus() {
+    try {
+        const res = await fetch('/api/status');
+        const data = await res.json();
+        
+        document.getElementById('totalValue').textContent = '$' + data.portfolio.total_value.toFixed(2);
+        document.getElementById('dailyPnl').textContent = (data.portfolio.daily_pnl >= 0 ? '+' : '') + '$' + data.portfolio.daily_pnl.toFixed(2);
+        document.getElementById('dailyPnl').style.color = data.portfolio.daily_pnl >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
+        
+        const statusEl = document.getElementById('status');
+        if (data.trading_engine.running) {
+            statusEl.innerHTML = '<span class="status-indicator status-online"></span>Running';
+        } else {
+            statusEl.innerHTML = '<span class="status-indicator status-offline"></span>Stopped';
+        }
+        
+        document.getElementById('activeStrategy').textContent = data.trading_engine.strategy;
+        
+        const bd = data.portfolio.breakdown || {};
+        document.getElementById('alpacaValue').textContent = '$' + (bd.alpaca || 0).toFixed(2);
+        // Show testnet value in Binance field since that's the active mode
+        const binanceTotal = (bd.binance_live || 0) + (bd.binance_testnet || 0);
+        document.getElementById('binanceValue').textContent = '$' + binanceTotal.toFixed(2);
+        document.getElementById('paypalBalance').textContent = '$' + (bd.paypal || 0).toFixed(2);
+        
+        document.getElementById('alpacaStatus').innerHTML = data.brokers.alpaca.connected 
+            ? '<span class="status-indicator status-online"></span>Connected' 
+            : '<span class="status-indicator status-offline"></span>Disconnected';
+        document.getElementById('binanceStatus').innerHTML = data.brokers.binance.connected 
+            ? '<span class="status-indicator status-online"></span>Connected' 
+            : '<span class="status-indicator status-offline"></span>Disconnected';
+        document.getElementById('paypalStatus').innerHTML = data.brokers.paypal.connected 
+            ? '<span class="status-indicator status-online"></span>Connected' 
+            : '<span class="status-indicator status-offline"></span>Disconnected';
+    } catch (e) {}
+}
+
+async function startTrading() {
+    await fetch('/api/trading/start', {method: 'POST'});
+    loadStatus();
+}
+
+async function stopTrading() {
+    await fetch('/api/trading/stop', {method: 'POST'});
+    loadStatus();
+}
+
+loadStatus();
+setInterval(loadStatus, 5000);
+</script>
+{% endblock %}

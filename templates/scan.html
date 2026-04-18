@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="header">
+    <h2>🔍 Live Scan Monitor</h2>
+    <div>
+        <span id="engineStatus" style="color: var(--text-secondary);">Checking...</span>
+    </div>
+</div>
+
+<div class="card">
+    <h3>Recent Evaluations</h3>
+    <div id="scanResults" style="margin-top: 12px;">
+        <p style="color: var(--text-secondary);">Loading scan data...</p>
+    </div>
+</div>
+
+<div class="card" style="margin-top: 16px;">
+    <h3>Signal Legend</h3>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 8px; margin-top: 12px; font-size: 0.85em; color: var(--text-secondary);">
+        <div>🟢 <strong>Score ≥ 1.5</strong> — Moderate trade threshold</div>
+        <div>🟡 <strong>Score 0.5–1.5</strong> — Signal detected, below threshold</div>
+        <div>🔴 <strong>Score &lt; 0.5</strong> — No signal</div>
+        <div>📊 <strong>sma_bullish/bearish</strong> — Trend alignment</div>
+        <div>📊 <strong>macd_bullish/bearish</strong> — Momentum</div>
+        <div>📊 <strong>rsi_oversold/overbought</strong> — Mean reversion</div>
+        <div>📊 <strong>bb_lower/upper</strong> — Bollinger extremes</div>
+        <div>📊 <strong>roc_positive/negative</strong> — Rate of change</div>
+    </div>
+</div>
+
+<script>
+let lastCount = 0;
+
+function getScoreColor(score, signal) {
+    if (!signal) return 'var(--accent-red)';
+    if (score >= 1.5) return 'var(--accent-green)';
+    return 'var(--accent-cyan)';
+}
+
+function formatTime(iso) {
+    try {
+        const d = new Date(iso);
+        return d.toLocaleTimeString('en-US', {hour12: false, hour:'2-digit', minute:'2-digit', second:'2-digit'});
+    } catch(e) { return iso; }
+}
+
+async function loadScan() {
+    try {
+        const res = await fetch('/api/scan');
+        const data = await res.json();
+        
+        const statusEl = document.getElementById('engineStatus');
+        if (data.running) {
+            statusEl.innerHTML = '<span class="status-indicator status-online"></span>Engine Running';
+        } else {
+            statusEl.innerHTML = '<span class="status-indicator status-offline"></span>Engine Stopped';
+        }
+        
+        const container = document.getElementById('scanResults');
+        if (!data.scan_log || data.scan_log.length === 0) {
+            container.innerHTML = '<p style="color: var(--text-secondary);">No scan data yet. Start the trading engine to see live evaluations.</p>';
+            return;
+        }
+        
+        // Show newest first, group by evaluation cycle
+        const logs = [...data.scan_log].reverse();
+        let html = '';
+        
+        logs.slice(0, 30).forEach(scan => {
+            const scoreColor = getScoreColor(scan.score, scan.signal);
+            const signalBadge = scan.signal 
+                ? `<span style="color: ${scoreColor}; font-weight: bold;">${scan.direction.toUpperCase()} ${scan.score.toFixed(2)}</span>`
+                : `<span style="color: var(--text-secondary);">No signal</span>`;
+            
+            const inds = scan.indicators || {};
+            const indHtml = Object.entries(inds).map(([k,v]) => `${k}: ${v}`).join(' | ');
+            
+            html += `
+            <div style="background: var(--bg-hover); border-radius: 8px; padding: 12px; margin-bottom: 8px; font-size: 0.9em;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                    <div>
+                        <strong style="color: var(--text-primary);">${scan.symbol}</strong>
+                        <span style="color: var(--text-secondary); margin-left: 8px; font-size: 0.8em;">${scan.broker || 'unknown'}</span>
+                    </div>
+                    <div style="font-size: 0.8em; color: var(--text-secondary);">${formatTime(scan.time)}</div>
+                </div>
+                <div style="margin-bottom: 6px;">
+                    ${signalBadge}
+                    ${scan.triggered && scan.triggered.length > 0 ? `<span style="color: var(--text-secondary); margin-left: 12px; font-size: 0.8em;">${scan.triggered.join(', ')}</span>` : ''}
+                </div>
+                ${indHtml ? `<div style="color: var(--text-secondary); font-size: 0.75em; word-break: break-all;">${indHtml}</div>` : ''}
+            </div>`;
+        });
+        
+        container.innerHTML = html;
+    } catch (e) {
+        document.getElementById('scanResults').innerHTML = '<p style="color: var(--accent-red);">Failed to load scan data</p>';
+    }
+}
+
+loadScan();
+setInterval(loadScan, 5000);
+</script>
+{% endblock %}

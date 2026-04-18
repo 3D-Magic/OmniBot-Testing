@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="header">
+    <h2>💼 Positions</h2>
+</div>
+
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-label">Open Positions</div>
+        <div class="stat-value" id="posCount">0</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Total Exposure</div>
+        <div class="stat-value" id="posExposure">$0.00</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Unrealized P&L</div>
+        <div class="stat-value" id="posPnl">$0.00</div>
+    </div>
+</div>
+
+<div class="card" style="margin-top: 20px;">
+    <h3>Active Positions</h3>
+    <div style="overflow-x: auto; margin-top: 16px;">
+        <table class="data-table" id="positionsTable">
+            <thead>
+                <tr>
+                    <th>Symbol</th>
+                    <th>Broker</th>
+                    <th>Qty</th>
+                    <th>Avg Entry</th>
+                    <th>Current</th>
+                    <th>Market Value</th>
+                    <th>P&L</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td colspan="8" style="text-align:center; color: var(--text-secondary);">Loading...</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+async function loadPositions() {
+    try {
+        const res = await fetch('/api/positions');
+        const data = await res.json();
+        const positions = data.tracked_positions || [];
+        const tbody = document.querySelector('#positionsTable tbody');
+
+        let exposure = 0;
+        let totalPnl = 0;
+
+        if (positions.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color: var(--text-secondary);">No open positions</td></tr>';
+        } else {
+            tbody.innerHTML = positions.map(p => {
+                const mkt = p.market_value || 0;
+                const pnl = p.unrealized_pl || 0;
+                const pnlPct = p.unrealized_plpc || 0;
+                exposure += mkt;
+                totalPnl += pnl;
+                const pnlColor = pnl >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
+                return `<tr>
+                    <td><strong>${p.symbol || p.asset || '-'}</strong></td>
+                    <td>${p.broker || '-'}</td>
+                    <td>${p.qty || 0}</td>
+                    <td>$${(p.avg_entry_price || 0).toFixed(2)}</td>
+                    <td>$${(p.current_price || 0).toFixed(2)}</td>
+                    <td>$${mkt.toFixed(2)}</td>
+                    <td style="color:${pnlColor}">$${pnl.toFixed(2)} (${pnlPct.toFixed(2)}%)</td>
+                    <td><button class="btn btn-danger" onclick="closePosition('${p.symbol || p.asset}')">Close</button></td>
+                </tr>`;
+            }).join('');
+        }
+
+        document.getElementById('posCount').textContent = positions.length;
+        document.getElementById('posExposure').textContent = '$' + exposure.toFixed(2);
+        const pnlEl = document.getElementById('posPnl');
+        pnlEl.textContent = (totalPnl >= 0 ? '+' : '') + '$' + totalPnl.toFixed(2);
+        pnlEl.style.color = totalPnl >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
+    } catch (e) {}
+}
+
+async function closePosition(symbol) {
+    if (!confirm('Close position for ' + symbol + '?')) return;
+    await fetch('/api/position/close', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({symbol})
+    });
+    loadPositions();
+}
+
+loadPositions();
+setInterval(loadPositions, 3000);
+</script>
+{% endblock %}

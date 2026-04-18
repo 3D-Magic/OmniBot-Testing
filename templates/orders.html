@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="header">
+    <h2>📋 Orders</h2>
+</div>
+
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-label">Total Orders</div>
+        <div class="stat-value" id="orderTotal">0</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Filled</div>
+        <div class="stat-value" id="orderFilled">0</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Pending</div>
+        <div class="stat-value" id="orderPending">0</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Cancelled</div>
+        <div class="stat-value" id="orderCancelled">0</div>
+    </div>
+</div>
+
+<div class="card" style="margin-top: 20px;">
+    <h3>Recent Orders</h3>
+    <div style="overflow-x: auto; margin-top: 16px;">
+        <table class="data-table" id="ordersTable">
+            <thead>
+                <tr>
+                    <th>Symbol</th>
+                    <th>Broker</th>
+                    <th>Side</th>
+                    <th>Qty</th>
+                    <th>Type</th>
+                    <th>Status</th>
+                    <th>Price</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td colspan="8" style="text-align:center; color: var(--text-secondary);">Loading...</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+async function loadOrders() {
+    try {
+        const res = await fetch('/api/orders');
+        const data = await res.json();
+        const orders = data.orders || [];
+        const tbody = document.querySelector('#ordersTable tbody');
+
+        let filled = 0, pending = 0, cancelled = 0;
+
+        if (orders.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color: var(--text-secondary);">No orders found</td></tr>';
+        } else {
+            tbody.innerHTML = orders.map(o => {
+                const st = (o.status || '').toLowerCase();
+                if (st === 'filled') filled++;
+                else if (st === 'new' || st === 'partially_filled' || st === 'open') pending++;
+                else if (st === 'canceled' || st === 'cancelled') cancelled++;
+                const sideColor = (o.side || '').toLowerCase() === 'buy' ? 'var(--accent-green)' : 'var(--accent-red)';
+                return `<tr>
+                    <td><strong>${o.symbol || '-'}</strong></td>
+                    <td>${o.broker || '-'}</td>
+                    <td style="color:${sideColor}">${o.side || '-'}</td>
+                    <td>${o.qty || 0}</td>
+                    <td>${o.type || '-'}</td>
+                    <td>${o.status || '-'}</td>
+                    <td>$${parseFloat(o.price || 0).toFixed(2)}</td>
+                    <td>${st === 'filled' || st === 'canceled' || st === 'cancelled' ? '-' : `<button class="btn btn-danger" onclick="cancelOrder('${o.order_id || ''}')">Cancel</button>`}</td>
+                </tr>`;
+            }).join('');
+        }
+
+        document.getElementById('orderTotal').textContent = orders.length;
+        document.getElementById('orderFilled').textContent = filled;
+        document.getElementById('orderPending').textContent = pending;
+        document.getElementById('orderCancelled').textContent = cancelled;
+    } catch (e) {}
+}
+
+async function cancelOrder(orderId) {
+    if (!orderId || !confirm('Cancel order ' + orderId + '?')) return;
+    await fetch('/api/order/cancel', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({order_id: orderId})
+    });
+    loadOrders();
+}
+
+loadOrders();
+setInterval(loadOrders, 3000);
+</script>
+{% endblock %}

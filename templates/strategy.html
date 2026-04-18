@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="header">
+    <h2>🧠 Trading Strategies</h2>
+</div>
+
+<div id="strategies-container"></div>
+
+<script>
+async function loadStrategies() {
+    const res = await fetch('/api/strategies');
+    const data = await res.json();
+    
+    const container = document.getElementById('strategies-container');
+    container.innerHTML = '';
+    
+    for (const [key, strat] of Object.entries(data.strategies)) {
+        const isActive = key === data.current_strategy;
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.style.cursor = 'pointer';
+        card.style.border = isActive ? '2px solid var(--accent-cyan)' : '1px solid var(--border-color)';
+        card.innerHTML = `
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <div style="font-size: 2.5em;">${strat.icon}</div>
+                <div style="flex: 1;">
+                    <h3 style="margin-bottom: 5px;">${strat.name} ${isActive ? '<span style="color: var(--accent-cyan);">(Active)</span>' : ''}</h3>
+                    <p style="color: var(--text-secondary); font-size: 0.9em;">${strat.description}</p>
+                    <div style="display: flex; gap: 15px; margin-top: 10px; font-size: 0.8em; color: var(--text-secondary);">
+                        <span>⏱️ ${strat.timeframe}</span>
+                        <span>📊 ${strat.indicators}</span>
+                        <span style="color: ${strat.risk === 'high' ? 'var(--accent-red)' : 'var(--accent-green)'}">⚠️ ${strat.risk} risk</span>
+                    </div>
+                </div>
+            </div>
+        `;
+        card.onclick = () => selectStrategy(key);
+        container.appendChild(card);
+    }
+}
+
+async function selectStrategy(strategy) {
+    await fetch('/api/trading/strategy', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({strategy})
+    });
+    loadStrategies();
+}
+
+loadStrategies();
+</script>
+{% endblock %}

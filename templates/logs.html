@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="header">
+    <h2>📜 System Logs</h2>
+</div>
+
+<div class="card">
+    <pre id="logs" style="font-family: monospace; font-size: 0.85em; line-height: 1.5; max-height: 500px; overflow-y: auto;">Loading logs...</pre>
+</div>
+
+<script>
+async function loadLogs() {
+    try {
+        const res = await fetch('/api/logs');
+        const data = await res.json();
+        const logs = data.logs || [];
+        document.getElementById('logs').textContent = logs.map(l => 
+            `[${l.time}] [${l.level.toUpperCase()}] ${l.message}`
+        ).join('\n');
+    } catch (e) {
+        document.getElementById('logs').textContent = 'Failed to load logs';
+    }
+}
+loadLogs();
+setInterval(loadLogs, 3000);
+</script>
+{% endblock %}

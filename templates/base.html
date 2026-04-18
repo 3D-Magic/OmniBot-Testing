@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>OMNIBOT TITAN v2.7.2</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <aside class="sidebar">
+        <div class="logo">
+            <div class="logo-icon">🤖</div>
+            <div class="logo-text"><h1>OMNIBOT</h1></div>
+        </div>
+        <div class="logo-version">v2.7.2 Titan</div>
+        
+        <div class="nav-section">
+            <div class="nav-section-title">Trading</div>
+            <a href="/" class="nav-item {% if request.path == '/' %}active{% endif %}">📊 <span>Dashboard</span></a>
+            <a href="/positions" class="nav-item {% if request.path == '/positions' %}active{% endif %}">💼 <span>Positions</span></a>
+            <a href="/orders" class="nav-item {% if request.path == '/orders' %}active{% endif %}">📋 <span>Orders</span></a>
+            <a href="/trade" class="nav-item {% if request.path == '/trade' %}active{% endif %}">🎯 <span>Trade</span></a>
+        </div>
+        
+        <div class="nav-section">
+            <div class="nav-section-title">Analysis</div>
+            <a href="/graphs" class="nav-item {% if request.path == '/graphs' %}active{% endif %}">📈 <span>Graphs</span></a>
+            <a href="/strategy" class="nav-item {% if request.path == '/strategy' %}active{% endif %}">🧠 <span>Strategy</span></a>
+            <a href="/scan" class="nav-item {% if request.path == '/scan' %}active{% endif %}">🔍 <span>Live Scan</span></a>
+        </div>
+        
+        <div class="nav-section">
+            <div class="nav-section-title">System</div>
+            <a href="/settings" class="nav-item {% if request.path == '/settings' %}active{% endif %}">⚙️ <span>Settings</span></a>
+            <a href="/logs" class="nav-item {% if request.path == '/logs' %}active{% endif %}">📜 <span>Logs</span></a>
+            <a href="/logout" class="nav-item">🚪 <span>Logout</span></a>
+        </div>
+    </aside>
+    
+    <main class="main-content">
+        {% block content %}{% endblock %}
+    </main>
+    
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,73 @@
+{
+  "dashboard_host": "0.0.0.0",
+  "dashboard_port": 8081,
+  "trading_enabled": false,
+  "active_strategy": "swing_trading",
+  "brokers": {
+    "alpaca": {
+      "enabled": false,
+      "paper": true,
+      "api_key": "",
+      "secret_key": ""
+    },
+    "binance": {
+      "enabled": false,
+      "testnet": true,
+      "api_key": "",
+      "secret_key": ""
+    },
+    "paypal": {
+      "enabled": false,
+      "sandbox": true,
+      "client_id": "",
+      "client_secret": ""
+    }
+  },
+  "risk": {
+    "stop_loss_pct": 5.0,
+    "take_profit_pct": 10.0,
+    "max_position_pct": 10.0,
+    "max_daily_loss": 100.0
+  },
+  "strategies": {
+    "scalping": {
+      "enabled": true,
+      "allocation": 10
+    },
+    "day_trading": {
+      "enabled": true,
+      "allocation": 20
+    },
+    "swing_trading": {
+      "enabled": true,
+      "allocation": 30
+    },
+    "momentum": {
+      "enabled": false,
+      "allocation": 15
+    },
+    "mean_reversion": {
+      "enabled": false,
+      "allocation": 15
+    },
+    "breakout": {
+      "enabled": false,
+      "allocation": 10
+    }
+  },
+  "trading_mode": "moderate",
+  "alpaca_watchlist": [
+    "AAPL",
+    "MSFT",
+    "GOOGL",
+    "AMZN",
+    "TSLA"
+  ],
+  "binance_watchlist": [
+    "BTC",
+    "ETH",
+    "BNB",
+    "SOL",
+    "ADA"
+  ]
+}
