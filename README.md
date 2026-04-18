@@ -2,7 +2,7 @@
 
 [![Version](https://img.shields.io/badge/version-2.7.2-blue.svg)](https://github.com/omnibot/omnibot-titan)
 [![Python](https://img.shields.io/badge/python-3.8+-green.svg)](https://www.python.org/)
-[![License](https://img.shields.io/badge/license-MIT-yellow.svg)](LICENSE)
+[![License](https://img.shields.io/badge/license-Personal%20Use-red.svg)](LICENSE)
 
 **Professional Algorithmic Trading Bot with Real Order Execution**
 
