@@ -6,7 +6,7 @@ Supports: Alpaca, Binance, PayPal
 Features: Real order execution, touch keyboard, kiosk mode
 
 Author: OMNIBOT Team
-License: MIT
+License: Personal Use Only
 Repository: https://github.com/omnibot/omnibot-titan
 """
 
@@ -15,6 +15,7 @@ import json
 import logging
 import threading
 import time
+import subprocess
 from datetime import datetime
 import pandas as pd
 from flask import Flask, render_template, jsonify, request, session, redirect
@@ -544,6 +545,154 @@ class PayPalWallet:
     
     def get_orders(self):
         return []
+
+
+# ============ WIFI MANAGER ============
+class WifiManager:
+    """Manage WiFi connections via NetworkManager (nmcli)"""
+    
+    def __init__(self):
+        self.interface = 'wlan0'
+        self.available = self._check_nmcli()
+    
+    def _check_nmcli(self):
+        try:
+            result = subprocess.run(['which', 'nmcli'], capture_output=True, text=True)
+            return result.returncode == 0
+        except Exception:
+            return False
+    
+    def _run(self, cmd):
+        try:
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+            return result.returncode == 0, result.stdout, result.stderr
+        except Exception as e:
+            return False, '', str(e)
+    
+    def scan(self):
+        """Scan for available WiFi networks. Returns list of dicts."""
+        if not self.available:
+            return {'success': False, 'error': 'nmcli not available'}
+        
+        # Use sudo for rescan to get all networks (non-sudo only shows cached/connected)
+        ok, out, err = self._run([
+            'sudo', '-n', 'nmcli', '-t', '-f', 'SSID,SIGNAL,SECURITY,IN-USE',
+            'dev', 'wifi', 'list', '--rescan', 'yes'
+        ])
+        if not ok:
+            # Fallback to non-sudo if sudo fails
+            ok, out, err = self._run([
+                'nmcli', '-t', '-f', 'SSID,SIGNAL,SECURITY,IN-USE',
+                'dev', 'wifi', 'list', '--rescan', 'yes'
+            ])
+        if not ok:
+            return {'success': False, 'error': err or 'scan failed'}
+        
+        networks = []
+        seen = set()
+        for raw_line in out.strip().split('\n'):
+            line = raw_line.strip()
+            if not line or line.startswith('SSID'):
+                continue
+            parts = line.split(':')
+            if len(parts) < 3:
+                continue
+            
+            # Handle both 3-part (no in-use) and 4+ part (with in-use) lines
+            if len(parts) >= 4:
+                in_use = parts[-1].strip() == '*'
+                security = parts[-2]
+                signal = parts[-3]
+                ssid = ':'.join(parts[:-3])
+            else:
+                in_use = False
+                security = parts[-1]
+                signal = parts[-2]
+                ssid = parts[0]
+            
+            if not ssid or ssid in seen:
+                continue
+            seen.add(ssid)
+            
+            try:
+                signal_int = int(signal)
+            except ValueError:
+                signal_int = 0
+            
+            networks.append({
+                'ssid': ssid,
+                'signal': signal_int,
+                'security': security or 'Open',
+                'connected': in_use
+            })
+        
+        # Sort by signal strength (descending)
+        networks.sort(key=lambda x: x['signal'], reverse=True)
+        return {'success': True, 'networks': networks}
+    
+    def get_status(self):
+        """Get current WiFi connection status."""
+        if not self.available:
+            return {'success': False, 'error': 'nmcli not available'}
+        
+        ok, out, err = self._run([
+            'nmcli', '-t', '-f', 'NAME,TYPE,DEVICE',
+            'connection', 'show', '--active'
+        ])
+        if not ok:
+            return {'success': False, 'error': err or 'status check failed'}
+        
+        for line in out.strip().split('\n'):
+            if not line:
+                continue
+            parts = line.split(':')
+            if len(parts) >= 3 and 'wireless' in parts[1].lower():
+                return {
+                    'success': True,
+                    'connected': True,
+                    'connection_name': parts[0],
+                    'device': parts[2]
+                }
+        
+        return {'success': True, 'connected': False}
+    
+    def connect(self, ssid, password):
+        """Connect to a WiFi network."""
+        if not self.available:
+            return {'success': False, 'error': 'nmcli not available'}
+        
+        if not ssid:
+            return {'success': False, 'error': 'SSID required'}
+        
+        cmd = [
+            'nmcli', 'dev', 'wifi', 'connect', ssid,
+            'ifname', self.interface
+        ]
+        if password:
+            cmd += ['password', password]
+        
+        ok, out, err = self._run(cmd)
+        if ok:
+            return {'success': True, 'message': out.strip() or f'Connected to {ssid}'}
+        else:
+            error_msg = err.strip() or out.strip() or 'Connection failed'
+            return {'success': False, 'error': error_msg}
+    
+    def disconnect(self):
+        """Disconnect from current WiFi."""
+        if not self.available:
+            return {'success': False, 'error': 'nmcli not available'}
+        
+        status = self.get_status()
+        if not status.get('connected'):
+            return {'success': False, 'error': 'Not connected'}
+        
+        conn_name = status.get('connection_name')
+        ok, out, err = self._run(['nmcli', 'connection', 'down', conn_name])
+        if ok:
+            return {'success': True, 'message': f'Disconnected from {conn_name}'}
+        else:
+            return {'success': False, 'error': err.strip() or 'Disconnect failed'}
 
 
 # ============ BALANCE AGGREGATOR ============
@@ -1514,6 +1663,7 @@ socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
 # Initialize components
 settings = Settings()
 balance_aggregator = BalanceAggregator()
+wifi_manager = WifiManager()
 
 # Initialize brokers with settings
 def init_brokers():
@@ -1764,6 +1914,37 @@ def api_settings():
         return jsonify({'success': True})
     
     return jsonify(settings.get_all())
+
+@app.route('/api/wifi/scan')
+def wifi_scan():
+    if not session.get('logged_in'):
+        return jsonify({'success': False, 'error': 'Not authenticated'})
+    result = wifi_manager.scan()
+    return jsonify(result)
+
+@app.route('/api/wifi/status')
+def wifi_status():
+    if not session.get('logged_in'):
+        return jsonify({'success': False, 'error': 'Not authenticated'})
+    result = wifi_manager.get_status()
+    return jsonify(result)
+
+@app.route('/api/wifi/connect', methods=['POST'])
+def wifi_connect():
+    if not session.get('logged_in'):
+        return jsonify({'success': False, 'error': 'Not authenticated'})
+    data = request.get_json()
+    ssid = data.get('ssid', '')
+    password = data.get('password', '')
+    result = wifi_manager.connect(ssid, password)
+    return jsonify(result)
+
+@app.route('/api/wifi/disconnect', methods=['POST'])
+def wifi_disconnect():
+    if not session.get('logged_in'):
+        return jsonify({'success': False, 'error': 'Not authenticated'})
+    result = wifi_manager.disconnect()
+    return jsonify(result)
 
 @app.route('/api/charts/data')
 def api_charts():

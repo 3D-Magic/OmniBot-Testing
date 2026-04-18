@@ -74,6 +74,26 @@
 </div>
 
 <div class="card">
+    <h3>📶 WiFi Network</h3>
+    <div class="form-section">
+        <div id="wifiStatus" style="margin-bottom: 12px; color: var(--text-secondary);">
+            Checking WiFi status...
+        </div>
+        <button class="btn btn-primary" onclick="scanWifi()" id="scanWifiBtn">🔍 Scan Networks</button>
+        <div id="wifiNetworks" style="margin-top: 12px;"></div>
+        <div id="wifiConnectForm" style="display: none; margin-top: 12px;">
+            <label class="form-label">Password for <span id="wifiSelectedSsid"></span></label>
+            <input type="password" id="wifiPassword" placeholder="WiFi password">
+            <div style="margin-top: 8px;">
+                <button class="btn btn-success" onclick="connectWifi()">🔗 Connect</button>
+                <button class="btn btn-secondary" onclick="cancelWifiConnect()">Cancel</button>
+            </div>
+        </div>
+        <div id="wifiResult" style="margin-top: 12px;"></div>
+    </div>
+</div>
+
+<div class="card">
     <h3>⚠️ Risk Management</h3>
     <div class="form-grid">
         <div>
@@ -218,5 +238,95 @@ async function testConnections() {
 }
 
 loadSettings();
+loadWifiStatus();
+
+async function loadWifiStatus() {
+    try {
+        const res = await fetch('/api/wifi/status');
+        const data = await res.json();
+        const el = document.getElementById('wifiStatus');
+        if (data.success && data.connected) {
+            el.innerHTML = '<span style="color: var(--accent-green);">✅ Connected to ' + data.connection_name + ' (' + data.device + ')</span>';
+        } else {
+            el.innerHTML = '<span style="color: var(--accent-red);">❌ Not connected to WiFi</span>';
+        }
+    } catch (e) {
+        document.getElementById('wifiStatus').textContent = 'WiFi manager not available';
+    }
+}
+
+async function scanWifi() {
+    const btn = document.getElementById('scanWifiBtn');
+    btn.disabled = true;
+    btn.textContent = '🔍 Scanning...';
+    document.getElementById('wifiNetworks').innerHTML = '<span style="color: var(--text-secondary);">Scanning...</span>';
+    
+    try {
+        const res = await fetch('/api/wifi/scan');
+        const data = await res.json();
+        
+        if (!data.success) {
+            document.getElementById('wifiNetworks').innerHTML = '<span style="color: var(--accent-red);">❌ ' + (data.error || 'Scan failed') + '</span>';
+            return;
+        }
+        
+        let html = '<div style="display: flex; flex-direction: column; gap: 8px;">';
+        data.networks.forEach(net => {
+            const bars = net.signal >= 80 ? '████' : net.signal >= 60 ? '███░' : net.signal >= 40 ? '██░░' : '█░░░';
+            const connected = net.connected ? ' <span style="color: var(--accent-green);">✓ Connected</span>' : '';
+            const lock = net.security && net.security !== 'Open' ? '🔒' : '🔓';
+            html += '<div onclick="selectWifi(\'' + net.ssid.replace(/'/g, "\\'") + '\')" style="padding: 10px; background: var(--bg-card); border-radius: 8px; cursor: pointer; border: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">';
+            html += '<div><strong>' + net.ssid + '</strong> ' + lock + connected + '</div>';
+            html += '<div style="color: var(--text-secondary); font-size: 0.85em;">' + bars + ' ' + net.signal + '%</div>';
+            html += '</div>';
+        });
+        html += '</div>';
+        document.getElementById('wifiNetworks').innerHTML = html;
+    } catch (e) {
+        document.getElementById('wifiNetworks').innerHTML = '<span style="color: var(--accent-red);">❌ Scan error</span>';
+    } finally {
+        btn.disabled = false;
+        btn.textContent = '🔍 Scan Networks';
+    }
+}
+
+let selectedSsid = '';
+function selectWifi(ssid) {
+    selectedSsid = ssid;
+    document.getElementById('wifiSelectedSsid').textContent = ssid;
+    document.getElementById('wifiConnectForm').style.display = 'block';
+    document.getElementById('wifiResult').innerHTML = '';
+}
+
+function cancelWifiConnect() {
+    document.getElementById('wifiConnectForm').style.display = 'none';
+    document.getElementById('wifiPassword').value = '';
+    selectedSsid = '';
+}
+
+async function connectWifi() {
+    const password = document.getElementById('wifiPassword').value;
+    const resultEl = document.getElementById('wifiResult');
+    resultEl.innerHTML = '<span style="color: var(--accent-cyan);">🔄 Connecting...</span>';
+    
+    try {
+        const res = await fetch('/api/wifi/connect', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ssid: selectedSsid, password: password})
+        });
+        const data = await res.json();
+        
+        if (data.success) {
+            resultEl.innerHTML = '<span style="color: var(--accent-green);">✅ ' + data.message + '</span>';
+            cancelWifiConnect();
+            loadWifiStatus();
+        } else {
+            resultEl.innerHTML = '<span style="color: var(--accent-red);">❌ ' + (data.error || 'Connection failed') + '</span>';
+        }
+    } catch (e) {
+        resultEl.innerHTML = '<span style="color: var(--accent-red);">❌ Connection error</span>';
+    }
+}
 </script>
 {% endblock %}

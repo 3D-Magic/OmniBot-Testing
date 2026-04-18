@@ -10,8 +10,6 @@ OMNIBOT TITAN is a complete trading system that supports multiple brokers (Alpac
 
 ![Dashboard Preview](docs/images/dashboard-preview.png)
 
-<img width="1263" height="659" alt="image" src="https://github.com/user-attachments/assets/1e8a870d-e872-49da-9162-0eedfaedcab7" />
-
 ## ✨ Features
 
 ### Trading
@@ -23,10 +21,10 @@ OMNIBOT TITAN is a complete trading system that supports multiple brokers (Alpac
 - ✅ **6 automated strategies** - Scalping, Day Trading, Swing, Momentum, Mean Reversion, Breakout
 
 ### Display
-- ✅ **Touch keyboard** - JavaScript keyboard for all input fields
-- ✅ **Kiosk mode** - PyQt5 browser (no Chromium crashes on Pi)
-- ✅ **Auto-login** - Boots straight to dashboard
-- ✅ **Pi optimized** - Works on all Raspberry Pi models
+- ✅ **Touch keyboard** - Server-side injected keyboard for touchscreen input
+- ✅ **Kiosk mode** - Chromium browser in fullscreen kiosk mode
+- ✅ **Auto-login** - Boots straight to dashboard via LightDM
+- ✅ **Pi optimized** - Tested on Raspberry Pi 5 with official touchscreen
 
 ### System
 - ✅ **Auto-start** - Starts on boot
@@ -46,17 +44,17 @@ OMNIBOT TITAN is a complete trading system that supports multiple brokers (Alpac
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/omnibot-titan.git
-cd omnibot-titan
+git clone https://github.com/3D-Magic/OmniBot-Testing.git
+cd OmniBot-Testing
 
 # Install Python dependencies
-pip install -r requirements.txt
+pip3 install -r requirements.txt
 
-# On Raspberry Pi, also install display packages
-sudo apt-get install python3-pyqt5 python3-pyqt5.qtwebengine
+# On Raspberry Pi, also install system packages
+sudo apt-get install -y chromium-browser unclutter network-manager
 
 # Run the bot
-python src/app.py
+python3 src/app.py
 ```
 
 ### Access Dashboard
@@ -108,32 +106,165 @@ Open your browser and go to: `http://localhost:8081`
 
 ## 🛠️ Raspberry Pi Installation
 
-For a complete Pi setup with auto-start and kiosk mode:
+OMNIBOT TITAN is designed to run headless on a Raspberry Pi with a touchscreen display. Follow this guide for a production-ready setup.
+
+### Recommended OS
+
+**Raspberry Pi OS (Legacy 64-bit)** with desktop environment
+
+- Use the official Raspberry Pi Imager
+- Select **Raspberry Pi OS (Legacy, 64-bit)** — this provides the best compatibility with LXDE + LightDM
+- Enable SSH and configure WiFi in the imager advanced options
+
+> ⚠️ **Do not use the "Lite" version** — the bot requires a desktop environment for kiosk mode.
+
+### Pi Setup Steps
 
 ```bash
-# Run the install script
-sudo ./scripts/install.sh
+# 1. Update the system
+sudo apt update && sudo apt full-upgrade -y
 
-# Reboot
+# 2. Install required system packages
+sudo apt install -y \
+    chromium-browser \
+    unclutter \
+    xdotool \
+    git \
+    python3-pip \
+    python3-venv \
+    network-manager
+
+# 3. Create the omnibot user (if not already present)
+sudo useradd -m -s /bin/bash omnibot || true
+sudo usermod -aG sudo,omnibot,adm,dialout,cdrom,audio,video,plugdev,games,users,input,render,netdev,lpadmin,gpio,i2c,spi omnibot
+
+# 4. Clone to /opt/omnibot (production path)
+sudo mkdir -p /opt/omnibot
+sudo git clone https://github.com/3D-Magic/OmniBot-Testing.git /opt/omnibot
+# Or copy your local build to /opt/omnibot
+
+# 5. Set ownership
+sudo chown -R omnibot:omnibot /opt/omnibot
+
+# 6. Install Python dependencies
+cd /opt/omnibot
+sudo pip3 install -r requirements.txt
+
+# 7. Create systemd service for the backend
+sudo tee /etc/systemd/system/omnibot.service << 'EOF'
+[Unit]
+Description=OMNIBOT
+After=network.target
+
+[Service]
+Type=simple
+User=omnibot
+WorkingDirectory=/opt/omnibot/src
+ExecStart=/usr/bin/python3 /opt/omnibot/src/app.py
+Restart=always
+RestartSec=10
+Environment=PYTHONUNBUFFERED=1
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+# 8. Create kiosk service
+sudo tee /etc/systemd/system/omnibot-kiosk.service << 'EOF'
+[Unit]
+Description=OMNIBOT Kiosk
+After=omnibot.service
+
+[Service]
+Type=simple
+User=omnibot
+Environment=DISPLAY=:0
+ExecStart=/usr/bin/chromium-browser \
+    --kiosk \
+    --no-first-run \
+    --no-default-browser-check \
+    --disable-infobars \
+    --disable-session-crashed-bubble \
+    --disable-features=TranslateUI \
+    --user-data-dir=/tmp/omnibot-chromium \
+    http://localhost:8081/
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=graphical.target
+EOF
+
+# 9. Enable auto-login via LightDM
+sudo tee /etc/lightdm/lightdm.conf.d/10-omnibot.conf << 'EOF'
+[Seat:*]
+autologin-user=omnibot
+autologin-user-timeout=0
+EOF
+
+# 10. Enable and start services
+sudo systemctl daemon-reload
+sudo systemctl enable omnibot omnibot-kiosk
+sudo systemctl start omnibot
+
+# 11. Reboot
 sudo reboot
 ```
 
 After reboot, the Pi will:
-1. Auto-login as `omnibot` user
-2. Start the OMNIBOT backend
-3. Launch the kiosk display
+1. Auto-login as `omnibot` user via LightDM
+2. Start the Flask backend on `0.0.0.0:8081`
+3. Launch Chromium in kiosk mode pointing to `http://localhost:8081`
+
+### System Tools to Use
+
+| Tool | Purpose | Why |
+|------|---------|-----|
+| **NetworkManager (`nmcli`)** | WiFi management | Scan, connect, disconnect from the Settings page |
+| **systemd** | Service management | `omnibot.service` runs the backend; `omnibot-kiosk.service` runs the display |
+| **LightDM** | Display manager | Handles auto-login for the kiosk |
+| **Chromium** | Kiosk browser | More stable than PyQt5 WebEngine on Pi |
+| **journalctl** | Log viewing | `sudo journalctl -u omnibot -f` |
+
+### Useful Commands
+
+```bash
+# View bot logs
+sudo journalctl -u omnibot -f
+
+# Restart the bot
+sudo systemctl restart omnibot
+
+# Restart kiosk display
+sudo systemctl restart omnibot-kiosk
+
+# Check WiFi status from terminal
+nmcli dev wifi list
+
+# Connect to WiFi from terminal
+nmcli dev wifi connect "SSID" password "PASSWORD"
+
+# Edit settings manually
+sudo nano /opt/omnibot/config/settings.json
+```
 
 ## 🔧 Commands
 
 ```bash
-# Start the bot
-python src/app.py
-
-# Start kiosk display (on Pi)
-python src/kiosk.py
+# Start the bot manually
+python3 src/app.py
 
 # View logs
 sudo journalctl -u omnibot -f
+
+# Check service status
+sudo systemctl status omnibot
+
+# Scan WiFi networks
+nmcli dev wifi list
+
+# Connect to WiFi
+nmcli dev wifi connect "SSID" password "PASSWORD"
 ```
 
 ## 📁 Project Structure
@@ -165,6 +296,10 @@ omnibot-titan/
 - Monitor positions regularly
 - Never risk more than you can afford to lose
 
+## 🤝 Contributing
+
+Contributions are welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+
 ## 📜 License
 
 This project is licensed under the Personal Use License - see [LICENSE](LICENSE) file.
@@ -178,4 +313,4 @@ This project is licensed under the Personal Use License - see [LICENSE](LICENSE)
 ---
 
 **Version:** 2.7.2  
-**Last Updated:** 18/04/2026
+**Last Updated:** 2026-04-15
