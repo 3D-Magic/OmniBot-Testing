@@ -1,73 +1,63 @@
 {
   "dashboard_host": "0.0.0.0",
   "dashboard_port": 8081,
-  "trading_enabled": false,
-  "active_strategy": "swing_trading",
-  "brokers": {
-    "alpaca": {
-      "enabled": false,
-      "paper": true,
-      "api_key": "",
-      "secret_key": ""
-    },
-    "binance": {
-      "enabled": false,
-      "testnet": true,
-      "api_key": "",
-      "secret_key": ""
-    },
-    "paypal": {
-      "enabled": false,
-      "sandbox": true,
-      "client_id": "",
-      "client_secret": ""
-    }
-  },
-  "risk": {
-    "stop_loss_pct": 5.0,
-    "take_profit_pct": 10.0,
-    "max_position_pct": 10.0,
-    "max_daily_loss": 100.0
-  },
-  "strategies": {
-    "scalping": {
-      "enabled": true,
-      "allocation": 10
-    },
-    "day_trading": {
-      "enabled": true,
-      "allocation": 20
-    },
-    "swing_trading": {
-      "enabled": true,
-      "allocation": 30
-    },
-    "momentum": {
-      "enabled": false,
-      "allocation": 15
-    },
-    "mean_reversion": {
-      "enabled": false,
-      "allocation": 15
-    },
-    "breakout": {
-      "enabled": false,
-      "allocation": 10
-    }
-  },
-  "trading_mode": "moderate",
+  "password": "admin",
+  "trading_enabled": true,
+  "trading_mode": "paper",
+  "strategy": "swing_trading",
+  "stop_loss_pct": 5,
+  "take_profit_pct": 10,
+  "max_position_pct": 10,
+  "max_daily_loss_pct": 5,
+  "enable_stop_loss": true,
+  "enable_take_profit": true,
+  "enable_trailing": false,
   "alpaca_watchlist": [
     "AAPL",
     "MSFT",
     "GOOGL",
     "AMZN",
-    "TSLA"
+    "TSLA",
+    "NVDA",
+    "META",
+    "NFLX"
   ],
   "binance_watchlist": [
-    "BTC",
-    "ETH",
-    "BNB",
-    "SOL",
-    "ADA"
-  ]
+    "BTCUSDT",
+    "ETHUSDT",
+    "BNBUSDT",
+    "ADAUSDT",
+    "SOLUSDT"
+  ],
+  "screen_brightness": 93,
+  "screen_sleep_enabled": true,
+  "screen_sleep_seconds": 600,
+  "login_on_wake": true,
+  "auto_logout": true,
+  "auto_start": false,
+  "email_notifications": false,
+  "debug_mode": false,
+  "alpaca": {
+    "api_key": "PKC5WXCQVGTDSWF7VMPPLSNJHY",
+    "secret_key": "AaDBbQP2XZSFhxgNvwW8SHVmzwJ5Uw9H8mDz67imR6NW",
+    "paper": true
+  },
+  "binance": {
+    "api_key": "7gYpCuBBYnZwB1So9QUPavsnz9FmsBnzEQkOWAzayHp92ePKlIk2yOZkutKz6qxe",
+    "secret_key": "WLpwLw0stwQdb6JPL8O4KorAin47vGDG6gUU3R63muJBAsWqmHr5tr5rwMNwo9Y2",
+    "testnet": false,
+    "enabled": true
+  },
+  "paypal": {
+    "enabled": false,
+    "sandbox": true,
+    "client_id": "",
+    "client_secret": ""
+  },
+  "interactive_brokers": {
+    "enabled": false,
+    "host": "127.0.0.1",
+    "port": 7497,
+    "client_id": 1
+  }
 }

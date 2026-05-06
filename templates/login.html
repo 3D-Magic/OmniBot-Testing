@@ -1,41 +1,583 @@
-{% extends "base.html" %}
-{% block content %}
-<div class="login-container">
-    <div class="login-box">
-        <div class="login-logo">🤖</div>
-        <h1>OMNIBOT TITAN</h1>
-        <p>v2.7.2 Professional Trading Bot</p>
-        <form id="loginForm">
-            <input type="text" id="username" name="username" placeholder="Username" value="admin" autocomplete="username">
-            <input type="password" id="password" name="password" placeholder="Password" value="admin" autocomplete="current-password">
-            <button type="submit" class="btn btn-primary">🔐 Login</button>
-        </form>
-        <div class="error-msg" id="errorMsg">Invalid credentials</div>
-        <p class="login-hint">Default: admin / admin</p>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Login - OMNIBOT v2.7.2</title>
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --bg-primary: #0a0a0f;
+            --bg-secondary: #12121a;
+            --bg-tertiary: #1a1a25;
+            --bg-card: #151520;
+            
+            --accent-primary: #00d4ff;
+            --accent-secondary: #7c3aed;
+            --accent-success: #00ff88;
+            --accent-danger: #ff4757;
+            
+            --text-primary: #ffffff;
+            --text-secondary: #a0a0b0;
+            --text-muted: #6b6b7b;
+            
+            --border-color: rgba(255, 255, 255, 0.08);
+            
+            --radius-md: 12px;
+            --radius-lg: 16px;
+            
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: thin;
+            -ms-overflow-style: auto;
+        }
+        
+        /* Animated Background */
+        .bg-animation {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            overflow: hidden;
+            -webkit-overflow-scrolling: touch;
+            z-index: 0;
+        }
+        
+        .bg-animation::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: 
+                radial-gradient(circle at 20% 80%, rgba(0, 212, 255, 0.08) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(124, 58, 237, 0.08) 0%, transparent 50%),
+                radial-gradient(circle at 40% 40%, rgba(0, 255, 136, 0.03) 0%, transparent 40%);
+            animation: bgMove 20s ease-in-out infinite;
+        }
+        
+        @keyframes bgMove {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            33% { transform: translate(2%, 2%) rotate(1deg); }
+            66% { transform: translate(-1%, 1%) rotate(-1deg); }
+        }
+        
+        /* Grid Pattern Overlay */
+        .grid-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: 
+                linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+            background-size: 50px 50px;
+            z-index: 1;
+            pointer-events: none;
+        }
+        
+        /* Login Container */
+        .login-container {
+            position: relative;
+            z-index: 10;
+            width: 100%;
+            max-width: 420px;
+            padding: 20px;
+            padding-bottom: 270px;
+        }
+        
+        .login-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: 48px 40px;
+            box-shadow: 
+                0 25px 50px -12px rgba(0, 0, 0, 0.5),
+                0 0 0 1px rgba(255, 255, 255, 0.05);
+            animation: fadeInUp 0.6s ease;
+        }
+        
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        /* Logo */
+        .logo {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        
+        .logo-icon {
+            width: 72px;
+            height: 72px;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            border-radius: var(--radius-lg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            font-size: 2em;
+            box-shadow: 0 8px 30px rgba(0, 212, 255, 0.3);
+            animation: pulse 3s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 8px 30px rgba(0, 212, 255, 0.3); }
+            50% { box-shadow: 0 8px 40px rgba(0, 212, 255, 0.5); }
+        }
+        
+        .logo h1 {
+            font-size: 1.8em;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--text-primary), var(--accent-primary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 8px;
+        }
+        
+        .logo p {
+            color: var(--text-muted);
+            font-size: 0.9em;
+        }
+        
+        /* Form */
+        .form-group {
+            margin-bottom: 24px;
+        }
+        
+        .form-group label {
+            display: block;
+            font-size: 0.85em;
+            font-weight: 500;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+        
+        .input-wrapper {
+            position: relative;
+        }
+        
+        .input-wrapper i {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            font-size: 1em;
+            transition: var(--transition);
+        }
+        
+        .form-group input {
+            width: 100%;
+            padding: 14px 16px 14px 48px;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            font-size: 1em;
+            transition: var(--transition);
+        }
+        
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.1);
+        }
+        
+        .form-group input:focus + i,
+        .input-wrapper:focus-within i {
+            color: var(--accent-primary);
+        }
+        
+        .form-group input::placeholder {
+            color: var(--text-muted);
+        }
+        
+        /* Button */
+        .btn-login {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            border: none;
+            border-radius: var(--radius-md);
+            color: white;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 32px;
+        }
+        
+        .btn-login:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(0, 212, 255, 0.4);
+        }
+        
+        .btn-login:active {
+            transform: translateY(0);
+        }
+        
+        .btn-login i {
+            transition: transform 0.3s ease;
+        }
+        
+        .btn-login:hover i {
+            transform: translateX(4px);
+        }
+        
+        /* Error Message */
+        .error-message {
+            background: rgba(255, 71, 87, 0.1);
+            border: 1px solid rgba(255, 71, 87, 0.2);
+            border-radius: var(--radius-md);
+            padding: 14px 16px;
+            margin-bottom: 24px;
+            display: none;
+            align-items: center;
+            gap: 10px;
+            color: var(--accent-danger);
+            font-size: 0.9em;
+            animation: shake 0.5s ease;
+        }
+        
+        .error-message.show {
+            display: flex;
+        }
+        
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-5px); }
+            40%, 80% { transform: translateX(5px); }
+        }
+        
+        /* Footer */
+        .login-footer {
+            text-align: center;
+            margin-top: 32px;
+            padding-top: 24px;
+            border-top: 1px solid var(--border-color);
+        }
+        
+        .login-footer p {
+            color: var(--text-muted);
+            font-size: 0.8em;
+        }
+        
+        .login-footer .version {
+            color: var(--accent-primary);
+            font-weight: 600;
+        }
+        
+        /* Loading State */
+        .btn-login.loading {
+            pointer-events: none;
+            opacity: 0.8;
+        }
+        
+        .btn-login.loading i {
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* Responsive */
+        @media (max-width: 480px) {
+            .login-card {
+                padding: 36px 24px;
+            }
+            
+            .logo-icon {
+                width: 60px;
+                height: 60px;
+                font-size: 1.6em;
+            }
+            
+            .logo h1 {
+                font-size: 1.5em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-animation"></div>
+    <div class="grid-overlay"></div>
+    
+    <div class="login-container">
+        <div class="login-card">
+            <div class="logo">
+                <div class="logo-icon">
+                    <i class="fas fa-robot"></i>
+                </div>
+                <h1>OMNIBOT</h1>
+                <p>Advanced Multi-Broker Trading</p>
+            </div>
+            
+            <div class="error-message" id="error-message">
+                <i class="fas fa-exclamation-circle"></i>
+                <span id="error-text">Invalid credentials</span>
+            </div>
+            
+            <form id="login-form" onsubmit="handleLogin(event)">
+                <div class="form-group">
+                    <label for="username">Username</label>
+                    <div class="input-wrapper">
+                        <input type="text" id="username" inputmode="none" name="username" placeholder="Enter username" required autofocus>
+                        <i class="fas fa-user"></i>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <div class="input-wrapper">
+                        <input type="password" id="password" inputmode="none" name="password" placeholder="Enter password" required inputmode="none" >
+                        <i class="fas fa-lock"></i>
+                    </div>
+                </div>
+                
+                <button type="submit" class="btn-login" id="login-btn">
+                    <span>Sign In</span>
+                    <i class="fas fa-arrow-right"></i>
+                </button>
+            </form>
+            
+            <div class="login-footer">
+                <p>OMNIBOT <span class="version">v2.7.2 Titan</span></p>
+            </div>
+        </div>
     </div>
+    
+    <script>
+        async function handleLogin(event) {
+            event.preventDefault();
+            
+            const btn = document.getElementById('login-btn');
+            const errorMsg = document.getElementById('error-message');
+            const errorText = document.getElementById('error-text');
+            
+            // Hide error
+            errorMsg.classList.remove('show');
+            
+            // Show loading
+            btn.classList.add('loading');
+            btn.innerHTML = '<i class="fas fa-spinner"></i> <span>Signing in...</span>';
+            
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            try {
+                const response = await fetch('/login', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({username, password})
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    btn.innerHTML = '<i class="fas fa-check"></i> <span>Success!</span>';
+                    setTimeout(() => {
+                        window.location.href = '/';
+                    }, 500);
+                } else {
+                    throw new Error(data.error || 'Login failed');
+                }
+            } catch (error) {
+                errorText.textContent = error.message;
+                errorMsg.classList.add('show');
+                
+                btn.classList.remove('loading');
+                btn.innerHTML = '<span>Sign In</span><i class="fas fa-arrow-right"></i>';
+            }
+        }
+        
+        // Focus username on load
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('username').focus();
+        });
+    </script>
+
+
+<!-- On-Screen Keyboard -->
+
+
+
+
+<style>
+#osk{position:fixed;bottom:0;left:0;right:0;background:#0f0f1a;border-top:2px solid #333;padding:6px;z-index:99999;display:none}
+.osk-row{display:flex;justify-content:center;gap:3px;margin-bottom:3px}
+.osk-key{min-width:28px;height:42px;padding:0 8px;background:#2a2a3a;color:#fff;border:1px solid #444;border-radius:5px;font-size:15px;font-weight:600;display:flex;align-items:center;justify-content:center;cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation;user-select:none;-webkit-user-select:none}
+.osk-key:active,.osk-key.pressed{background:#00d4ff;color:#000;border-color:#00d4ff}
+.osk-key.w2{min-width:56px}.osk-key.w3{min-width:84px;flex:1;max-width:200px}
+.osk-key.sp{background:#3b3b5a}.osk-key.shift-on{background:#00d4ff;color:#000}
+</style>
+<div id="osk">
+  <div class="osk-row"><div class="osk-key" data-c="1">1</div><div class="osk-key" data-c="2">2</div><div class="osk-key" data-c="3">3</div><div class="osk-key" data-c="4">4</div><div class="osk-key" data-c="5">5</div><div class="osk-key" data-c="6">6</div><div class="osk-key" data-c="7">7</div><div class="osk-key" data-c="8">8</div><div class="osk-key" data-c="9">9</div><div class="osk-key" data-c="0">0</div></div>
+  <div class="osk-row"><div class="osk-key" data-c="q">q</div><div class="osk-key" data-c="w">w</div><div class="osk-key" data-c="e">e</div><div class="osk-key" data-c="r">r</div><div class="osk-key" data-c="t">t</div><div class="osk-key" data-c="y">y</div><div class="osk-key" data-c="u">u</div><div class="osk-key" data-c="i">i</div><div class="osk-key" data-c="o">o</div><div class="osk-key" data-c="p">p</div></div>
+  <div class="osk-row"><div class="osk-key" data-c="a">a</div><div class="osk-key" data-c="s">s</div><div class="osk-key" data-c="d">d</div><div class="osk-key" data-c="f">f</div><div class="osk-key" data-c="g">g</div><div class="osk-key" data-c="h">h</div><div class="osk-key" data-c="j">j</div><div class="osk-key" data-c="k">k</div><div class="osk-key" data-c="l">l</div></div>
+  <div class="osk-row"><div class="osk-key w2 sp" data-c="SHIFT">&#8679;</div><div class="osk-key" data-c="z">z</div><div class="osk-key" data-c="x">x</div><div class="osk-key" data-c="c">c</div><div class="osk-key" data-c="v">v</div><div class="osk-key" data-c="b">b</div><div class="osk-key" data-c="n">n</div><div class="osk-key" data-c="m">m</div><div class="osk-key w2 sp" data-c="DEL">&#9003;</div></div>
+  <div class="osk-row"><div class="osk-key w2 sp" data-c=".">.</div><div class="osk-key w3" data-c=" ">Space</div><div class="osk-key w2 sp" data-c="ENTER">Done</div></div>
 </div>
 <script>
-document.getElementById('loginForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const username = document.getElementById('username').value;
-    const password = document.getElementById('password').value;
-    try {
-        const res = await fetch('/login', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({username, password})
-        });
-        const data = await res.json();
-        if (data.success) {
-            window.location.href = '/';
-        } else {
-            document.getElementById('errorMsg').style.display = 'block';
-        }
-    } catch (err) {
-        document.getElementById('errorMsg').textContent = 'Connection error';
-        document.getElementById('errorMsg').style.display = 'block';
+(function(){
+  var kbd = document.getElementById('osk');
+  if (!kbd) return;
+  var target = null, shift = false;
+  var lowers = 'qwertyuiopasdfghjklzxcvbnm';
+
+  function type(ch){
+    if (!target) return;
+    var s = target.selectionStart, e = target.selectionEnd, v = target.value;
+    if (s === null || e === null) {
+      target.value = (target.value || '') + ch;
+    } else {
+      target.value = v.slice(0, s) + ch + v.slice(e);
+      target.selectionStart = target.selectionEnd = s + ch.length;
     }
-});
-document.getElementById('username').focus();
+    target.dispatchEvent(new Event('input', {bubbles:true}));
+    setTimeout(function(){ target.focus(); }, 0);
+  }
+
+  function del(){
+    if (!target) return;
+    var s = target.selectionStart, e = target.selectionEnd, v = target.value;
+    if (s === null || e === null) {
+      target.value = (target.value || '').slice(0, -1);
+    } else if (s === e && s > 0) {
+      target.value = v.slice(0, s-1) + v.slice(e);
+      target.selectionStart = target.selectionEnd = s-1;
+    } else {
+      target.value = v.slice(0, s) + v.slice(e);
+      target.selectionStart = target.selectionEnd = s;
+    }
+    target.dispatchEvent(new Event('input', {bubbles:true}));
+    setTimeout(function(){ target.focus(); }, 0);
+  }
+
+  function update(){
+    document.querySelectorAll('.osk-key[data-c]').forEach(function(b){
+      var c = b.getAttribute('data-c');
+      if (c.length === 1 && lowers.indexOf(c) !== -1) b.textContent = shift ? c.toUpperCase() : c;
+    });
+    var sb = document.querySelector('.osk-key[data-c="SHIFT"]');
+    if (sb) sb.classList.toggle('shift-on', shift);
+  }
+
+  function pressKey(btn){
+    if (!btn) return;
+    btn.classList.add('pressed');
+    var c = btn.getAttribute('data-c');
+    if (c === 'SHIFT') { shift = !shift; update(); return; }
+    if (c === 'DEL') { del(); return; }
+    if (c === 'ENTER') { kbd.style.display = 'none'; if (target) target.blur(); return; }
+    var out = c;
+    if (c.length === 1 && lowers.indexOf(c) !== -1) out = shift ? c.toUpperCase() : c;
+    type(out);
+    if (shift) { shift = false; update(); }
+  }
+
+  function releaseKey(btn){
+    if (btn) btn.classList.remove('pressed');
+  }
+
+  // Touch devices: touchstart preventDefault suppresses synthetic click/mousedown
+  kbd.addEventListener('touchstart', function(ev){
+    ev.preventDefault();
+    ev.stopPropagation();
+    pressKey(ev.target.closest('.osk-key'));
+  }, {passive: false});
+
+  kbd.addEventListener('touchend', function(ev){
+    ev.preventDefault();
+    releaseKey(ev.target.closest('.osk-key'));
+  }, {passive: false});
+
+  kbd.addEventListener('touchcancel', function(ev){
+    releaseKey(ev.target.closest('.osk-key'));
+  });
+
+  // Mouse fallback (only fires if no touch support)
+  kbd.addEventListener('mousedown', function(ev){
+    ev.preventDefault();
+    ev.stopPropagation();
+    pressKey(ev.target.closest('.osk-key'));
+  });
+
+  kbd.addEventListener('click', function(ev){
+    ev.preventDefault();
+    ev.stopPropagation();
+    pressKey(ev.target.closest('.osk-key'));
+  });
+
+  kbd.addEventListener('mouseup', function(ev){
+    releaseKey(ev.target.closest('.osk-key'));
+  });
+
+  kbd.addEventListener('mouseleave', function(ev){
+    releaseKey(ev.target.closest('.osk-key'));
+  });
+
+  function show(el){
+    target = el;
+    kbd.style.display = 'block';
+    el.scrollIntoView({behavior:'smooth', block:'center'});
+  }
+  function hide(){
+    kbd.style.display = 'none';
+    target = null;
+  }
+
+  document.querySelectorAll('input, textarea').forEach(function(el){
+    el.addEventListener('focus', function(){ show(el); });
+  });
+
+  document.addEventListener('click', function(e){
+    if (e.target.matches('input, textarea')) return;
+    if (e.target.closest('#osk')) return;
+    hide();
+  });
+})();
 </script>
-{% endblock %}
+
+</body>
+</html>

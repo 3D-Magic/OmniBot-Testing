@@ -1,0 +1,44 @@
+{"timestamp": "2026-05-06T02:01:20.888346", "event": "attempt", "data": {"symbol": "MSFT", "broker": "alpaca", "side": "buy", "confidence": 0.37}}
+{"timestamp": "2026-05-06T02:01:22.069958", "event": "sizing_fail", "data": {"symbol": "MSFT", "broker": "alpaca", "quantity": 0, "price": 410.26, "total_value": 10000.0}}
+{"timestamp": "2026-05-06T02:01:52.085402", "event": "attempt", "data": {"symbol": "MSFT", "broker": "alpaca", "side": "buy", "confidence": 0.37}}
+{"timestamp": "2026-05-06T02:01:53.153304", "event": "sizing_fail", "data": {"symbol": "MSFT", "broker": "alpaca", "quantity": 0, "price": 410.72, "total_value": 10000.0}}
+{"timestamp": "2026-05-06T02:32:19.591682", "event": "attempt", "data": {"symbol": "META", "broker": "alpaca", "side": "buy", "confidence": 0.31}}
+{"timestamp": "2026-05-06T02:32:20.314091", "event": "sizing_fail", "data": {"symbol": "META", "broker": "alpaca", "quantity": 0, "price": 603.89, "total_value": 10000.0}}
+{"timestamp": "2026-05-06T02:32:50.330725", "event": "attempt", "data": {"symbol": "META", "broker": "alpaca", "side": "buy", "confidence": 0.31}}
+{"timestamp": "2026-05-06T02:32:51.052730", "event": "sizing_fail", "data": {"symbol": "META", "broker": "alpaca", "quantity": 0, "price": 604.15, "total_value": 10000.0}}
+{"timestamp": "2026-05-06T05:03:26.036469", "event": "attempt", "data": {"symbol": "AMZN", "broker": "alpaca", "side": "buy", "confidence": 0.31}}
+{"timestamp": "2026-05-06T05:03:27.027790", "event": "pre_submit", "data": {"symbol": "AMZN", "broker": "alpaca", "side": "buy", "quantity": 1, "price": 273.17, "confidence": 0.31}}
+{"timestamp": "2026-05-06T05:03:57.973586", "event": "attempt", "data": {"symbol": "AMZN", "broker": "alpaca", "side": "buy", "confidence": 0.31}}
+{"timestamp": "2026-05-06T05:03:58.937863", "event": "pre_submit", "data": {"symbol": "AMZN", "broker": "alpaca", "side": "buy", "quantity": 1, "price": 273.06, "confidence": 0.31}}
+{"timestamp": "2026-05-06T05:04:32.528327", "event": "attempt", "data": {"symbol": "AMZN", "broker": "alpaca", "side": "buy", "confidence": 0.31}}
+{"timestamp": "2026-05-06T05:04:33.537435", "event": "pre_submit", "data": {"symbol": "AMZN", "broker": "alpaca", "side": "buy", "quantity": 1, "price": 273.07, "confidence": 0.31}}
+{"timestamp": "2026-05-06T05:05:03.827551", "event": "attempt", "data": {"symbol": "AMZN", "broker": "alpaca", "side": "buy", "confidence": 0.31}}
+{"timestamp": "2026-05-06T05:05:04.578298", "event": "pre_submit", "data": {"symbol": "AMZN", "broker": "alpaca", "side": "buy", "quantity": 1, "price": 272.9, "confidence": 0.31}}
+{"timestamp": "2026-05-06T05:11:58.481261", "event": "attempt", "data": {"symbol": "AMZN", "broker": "alpaca", "side": "buy", "confidence": 0.37}}
+{"timestamp": "2026-05-06T05:11:59.469881", "event": "pre_submit", "data": {"symbol": "AMZN", "broker": "alpaca", "side": "buy", "quantity": 1, "price": 272.47, "confidence": 0.37}}
+{"timestamp": "2026-05-06T05:12:29.757815", "event": "attempt", "data": {"symbol": "AMZN", "broker": "alpaca", "side": "buy", "confidence": 0.37}}
+{"timestamp": "2026-05-06T05:12:30.739724", "event": "pre_submit", "data": {"symbol": "AMZN", "broker": "alpaca", "side": "buy", "quantity": 1, "price": 272.555, "confidence": 0.37}}
+{"timestamp": "2026-05-06T05:13:04.299248", "event": "attempt", "data": {"symbol": "AMZN", "broker": "alpaca", "side": "buy", "confidence": 0.43}}
+{"timestamp": "2026-05-06T05:13:05.310337", "event": "pre_submit", "data": {"symbol": "AMZN", "broker": "alpaca", "side": "buy", "quantity": 1, "price": 272.52, "confidence": 0.43}}
+{"timestamp": "2026-05-06T05:13:35.600911", "event": "attempt", "data": {"symbol": "AMZN", "broker": "alpaca", "side": "buy", "confidence": 0.43}}
+{"timestamp": "2026-05-06T05:13:36.359879", "event": "pre_submit", "data": {"symbol": "AMZN", "broker": "alpaca", "side": "buy", "quantity": 1, "price": 272.79, "confidence": 0.43}}
+{"timestamp": "2026-05-06T05:14:09.969620", "event": "attempt", "data": {"symbol": "AMZN", "broker": "alpaca", "side": "buy", "confidence": 0.31}}
+{"timestamp": "2026-05-06T05:14:10.692808", "event": "pre_submit", "data": {"symbol": "AMZN", "broker": "alpaca", "side": "buy", "quantity": 1, "price": 272.76, "confidence": 0.31}}
+{"timestamp": "2026-05-06T05:14:10.982220", "event": "attempt", "data": {"symbol": "BNBUSDT", "broker": "binance", "side": "buy", "confidence": 0.31}}
+{"timestamp": "2026-05-06T05:14:11.881092", "event": "pre_submit", "data": {"symbol": "BNBUSDT", "broker": "binance", "side": "buy", "quantity": 0.4932, "price": 628.54, "confidence": 0.31}}
+{"timestamp": "2026-05-06T05:14:12.067374", "event": "submit_fail", "data": {"symbol": "BNBUSDT", "broker": "binance", "side": "buy", "quantity": 0.4932, "price": 628.54}}
+{"timestamp": "2026-05-06T05:15:55.394764", "event": "attempt", "data": {"symbol": "GOOGL", "broker": "alpaca", "side": "buy", "confidence": 0.31}}
+{"timestamp": "2026-05-06T05:15:56.410856", "event": "sizing_fail", "data": {"symbol": "GOOGL", "broker": "alpaca", "quantity": 0, "price": 385.79, "total_value": 10002.42}}
+{"timestamp": "2026-05-06T05:16:28.635688", "event": "attempt", "data": {"symbol": "GOOGL", "broker": "alpaca", "side": "buy", "confidence": 0.31}}
+{"timestamp": "2026-05-06T05:16:29.661103", "event": "sizing_fail", "data": {"symbol": "GOOGL", "broker": "alpaca", "quantity": 0, "price": 385.8, "total_value": 10001.9}}
+{"timestamp": "2026-05-06T05:17:05.194921", "event": "attempt", "data": {"symbol": "GOOGL", "broker": "alpaca", "side": "buy", "confidence": 0.31}}
+{"timestamp": "2026-05-06T05:17:06.181640", "event": "sizing_fail", "data": {"symbol": "GOOGL", "broker": "alpaca", "quantity": 0, "price": 385.82, "total_value": 10001.36}}
+{"timestamp": "2026-05-06T05:17:38.375104", "event": "attempt", "data": {"symbol": "GOOGL", "broker": "alpaca", "side": "buy", "confidence": 0.31}}
+{"timestamp": "2026-05-06T05:17:39.371527", "event": "sizing_fail", "data": {"symbol": "GOOGL", "broker": "alpaca", "quantity": 0, "price": 385.89, "total_value": 10001.0}}
+{"timestamp": "2026-05-06T05:19:22.842282", "event": "attempt", "data": {"symbol": "GOOGL", "broker": "alpaca", "side": "buy", "confidence": 0.31}}
+{"timestamp": "2026-05-06T05:19:24.141888", "event": "sizing_fail", "data": {"symbol": "GOOGL", "broker": "alpaca", "quantity": 0, "price": 384.74, "total_value": 10001.27}}
+{"timestamp": "2026-05-06T05:19:56.355779", "event": "attempt", "data": {"symbol": "GOOGL", "broker": "alpaca", "side": "buy", "confidence": 0.31}}
+{"timestamp": "2026-05-06T05:19:57.079251", "event": "sizing_fail", "data": {"symbol": "GOOGL", "broker": "alpaca", "quantity": 0, "price": 384.87, "total_value": 10000.46}}
+{"timestamp": "2026-05-06T13:27:39.957991", "event": "attempt", "data": {"symbol": "BNBUSDT", "broker": "binance", "side": "sell", "confidence": 0.31}}
+{"timestamp": "2026-05-06T13:27:40.602607", "event": "pre_submit", "data": {"symbol": "BNBUSDT", "broker": "binance", "side": "sell", "quantity": 0.489, "price": 633.74, "confidence": 0.31}}
+{"timestamp": "2026-05-06T13:27:41.043407", "event": "submit_fail", "data": {"symbol": "BNBUSDT", "broker": "binance", "side": "sell", "quantity": 0.489, "price": 633.74}}
